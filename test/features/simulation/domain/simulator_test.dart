@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:simmo/features/simulation/domain/guarantee.dart';
 import 'package:simmo/features/simulation/domain/income_tax.dart';
+import 'package:simmo/features/simulation/domain/insurance.dart';
 import 'package:simmo/features/simulation/domain/notary_fees.dart';
 import 'package:simmo/features/simulation/domain/ptz.dart';
 import 'package:simmo/features/simulation/domain/simulation_input.dart';
@@ -9,7 +11,8 @@ import 'package:simmo/features/simulation/domain/simulator.dart';
 const _loanAndPayment = {MainField.loan, MainField.payment};
 const _income = 4600.0;
 const _rent = 700.0;
-const _tax = 650.0;
+const _withholding = 0.14;
+const _tax = _income * _withholding;
 
 /// Two broker proposals (existing home, main residence, 3.40%, bank
 /// insurance 0.50%, Crédit Logement guarantee) used as reference. Brokers
@@ -26,7 +29,8 @@ SimulationInput brokerCase({required double price, required int years}) =>
       rate: 0.034,
       netMonthlyIncome: _income,
       currentRent: _rent,
-      monthlyIncomeTax: _tax,
+      insuranceRate: 0.005,
+      withholdingRate: _withholding,
     );
 
 void main() {
@@ -36,7 +40,7 @@ void main() {
 
     test('financing plan', () {
       expect(r.notaryFees, closeTo(22700, 50));
-      expect(r.guaranteeFees, closeTo(3595.23, 2));
+      expect(r.guaranteeFees, closeTo(3595.23, 1));
       expect(loan.amount, closeTo(295195.23, 30));
       expect(r.totalCost, closeTo(330195.23, 30));
       expect((r.downPaymentShare * 100).round(), 11);
@@ -67,7 +71,7 @@ void main() {
 
     test('financing plan', () {
       expect(r.notaryFees, closeTo(19900, 50));
-      expect(r.guaranteeFees, closeTo(3122.11, 2));
+      expect(r.guaranteeFees, closeTo(3122.11, 1));
       expect(loan.amount, closeTo(251922.11, 30));
       expect((r.downPaymentShare * 100).round(), 12);
     });
@@ -98,6 +102,8 @@ void main() {
     test('price and payment', () {
       final r = simulate(base);
       expect(r.borrowed, closeTo(295195.23, 0.01));
+      // Crédit Logement grid: the broker's guarantee to the cent.
+      expect(r.guaranteeFees, closeTo(3595.23, 0.01));
       expect(r.price, closeTo(300000, 50));
       expect(r.monthlyPayment, closeTo(1585.03, 0.01));
       expect(r.taeg!, closeTo(0.0450, 0.0001));
@@ -195,6 +201,7 @@ void main() {
   group('PTZ', () {
     const newFlat = SimulationInput(
       computed: _loanAndPayment,
+      ptzEnabled: true,
       propertyKind: PropertyKind.newBuild,
       zone: PtzZone.a,
       price: 200000,
@@ -231,10 +238,57 @@ void main() {
       expect(r.ptz.reason, PtzReason.existingZone);
     });
 
+    test('off by default', () {
+      final r = simulate(newFlat.copyWith(ptzEnabled: false));
+      expect(r.ptz.reason, PtzReason.disabled);
+      expect(const SimulationInput().ptzEnabled, isFalse);
+    });
+
     test('income above the ceiling is not eligible', () {
       final r = simulate(newFlat.copyWith(referenceTaxIncome: 49001));
       expect(r.ptz.reason, PtzReason.income);
     });
+  });
+
+  test('Crédit Logement fees match its official simulator', () {
+    // (loan, DPE A or B, fees shown by creditlogement.fr in September 2026)
+    const cases = [
+      (10000.0, false, 469),
+      (40000.0, false, 786),
+      (100000.0, false, 1620),
+      (200000.0, false, 2660),
+      (251922.0, false, 3122),
+      (295195.0, false, 3595),
+      (300000.0, false, 3650),
+      (1500000.0, false, 14430),
+      (20000.0, true, 521),
+      (200000.0, true, 2498),
+      (255000.0, true, 2987),
+      (300000.0, true, 3575),
+    ];
+    for (final (amount, efficient, fees) in cases) {
+      expect(
+        creditLogementFee(amount, efficientHome: efficient),
+        closeTo(fees, 0.51),
+        reason: '$amount, DPE A/B: $efficient',
+      );
+    }
+  });
+
+  test('usual insurance rate by age and contract', () {
+    expect(usualInsuranceRate(age: 35, bankContract: true), 0.0034);
+    expect(usualInsuranceRate(age: 35, bankContract: false), 0.0015);
+    expect(usualInsuranceRate(age: 62, bankContract: true), 0.0062);
+  });
+
+  test('withholding rate from the payslip sets the income tax', () {
+    final r = simulate(
+      brokerCase(
+        price: 300000,
+        years: 25,
+      ).copyWith(withholdingRate: () => 0.12),
+    );
+    expect(r.incomeTax, closeTo(_income * 0.12, 0.001));
   });
 
   test('notary fees on a new home are around 2.5%', () {

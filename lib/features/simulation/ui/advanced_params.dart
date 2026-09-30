@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/number_field.dart';
 import '../domain/simulation_input.dart';
 import '../domain/simulation_result.dart';
+import 'commune_field.dart';
 
 /// Everything banks and brokers look at, preset to usual values and folded
 /// away by default.
@@ -56,6 +57,10 @@ class AdvancedParams extends StatelessWidget {
             input.dwellingType,
             (v) => _set((i) => i.copyWith(dwellingType: v)),
           ),
+          CommuneField(
+            zone: input.zone,
+            onZone: (v) => _set((i) => i.copyWith(zone: v)),
+          ),
           _Choice<PtzZone>(
             'Zone',
             const {
@@ -78,6 +83,11 @@ class AdvancedParams extends StatelessWidget {
               input.raisedTransferTax,
               (v) => _set((i) => i.copyWith(raisedTransferTax: v)),
             ),
+          _Toggle(
+            'DPE A ou B (garantie moins chère)',
+            input.efficientHome,
+            (v) => _set((i) => i.copyWith(efficientHome: v)),
+          ),
           _Amount(
             'Travaux',
             input.works,
@@ -110,24 +120,38 @@ class AdvancedParams extends StatelessWidget {
             input.notaryMiscFees,
             (v) => _set((i) => i.copyWith(notaryMiscFees: v)),
           ),
-          _Rate(
-            'Garantie : part proportionnelle',
-            input.guaranteeRate,
-            (v) => _set((i) => i.copyWith(guaranteeRate: v)),
-            decimals: 3,
-          ),
-          _Amount(
-            'Garantie : part fixe',
-            input.guaranteeFixed,
-            (v) => _set((i) => i.copyWith(guaranteeFixed: v)),
+          _Auto(
+            'Garantie (barème Crédit Logement)',
+            typed: input.guaranteeFees,
+            computed: result.guaranteeFees,
+            decimals: 2,
+            onChanged: (v) => _set((i) => i.copyWith(guaranteeFees: () => v)),
           ),
 
           const _Group('Assurance emprunteur'),
-          _Rate(
+          _Field(
+            'Âge de l’emprunteur',
+            NumberField(
+              value: input.borrowerAge.toDouble(),
+              suffix: 'ans',
+              dense: true,
+              onChanged: (v) => _set((i) => i.copyWith(borrowerAge: v.round())),
+            ),
+          ),
+          _Choice<bool>(
+            'Contrat',
+            const {true: 'Banque (groupe)', false: 'Délégation'},
+            input.bankInsurance,
+            (v) => _set((i) => i.copyWith(bankInsurance: v)),
+          ),
+          _Auto(
             'Taux (sur capital initial)',
-            input.insuranceRate,
-            (v) => _set((i) => i.copyWith(insuranceRate: v)),
+            typed: input.insuranceRate,
+            computed: result.insuranceRate,
+            scale: 100,
             decimals: 3,
+            suffix: '%',
+            onChanged: (v) => _set((i) => i.copyWith(insuranceRate: () => v)),
           ),
           _Rate(
             'Quotité assurée (totale)',
@@ -148,8 +172,7 @@ class AdvancedParams extends StatelessWidget {
               value: input.children.toDouble(),
               suffix: '',
               dense: true,
-              onChanged: (v) =>
-                  _set((i) => i.copyWith(children: v.round().clamp(0, 10))),
+              onChanged: (v) => _set((i) => i.copyWith(children: v.round())),
             ),
           ),
           _Amount(
@@ -167,23 +190,14 @@ class AdvancedParams extends StatelessWidget {
             input.rentalIncome,
             (v) => _set((i) => i.copyWith(rentalIncome: v)),
           ),
-          _Field(
-            'Impôt sur le revenu (par mois)',
-            NumberField(
-              value: input.monthlyIncomeTax ?? result.incomeTax.roundToDouble(),
-              decimals: 2,
-              dense: true,
-              onChanged: (v) =>
-                  _set((i) => i.copyWith(monthlyIncomeTax: () => v)),
-            ),
-            trailing: input.monthlyIncomeTax == null
-                ? null
-                : IconButton(
-                    tooltip: 'Estimer depuis le revenu fiscal',
-                    icon: const Icon(Icons.restart_alt, size: 20),
-                    onPressed: () =>
-                        _set((i) => i.copyWith(monthlyIncomeTax: () => null)),
-                  ),
+          _Auto(
+            'Taux de prélèvement à la source',
+            typed: input.withholdingRate,
+            computed: result.withholdingRate,
+            scale: 100,
+            decimals: 1,
+            suffix: '%',
+            onChanged: (v) => _set((i) => i.copyWith(withholdingRate: () => v)),
           ),
 
           const _Group('Aides'),
@@ -249,6 +263,49 @@ class _Field extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A value computed by the simulator unless the user types one; the reset
+/// button brings the computed value back.
+class _Auto extends StatelessWidget {
+  const _Auto(
+    this.label, {
+    required this.typed,
+    required this.computed,
+    required this.onChanged,
+    this.scale = 1,
+    this.decimals = 0,
+    this.suffix = '€',
+  });
+
+  final String label;
+  final double? typed;
+  final double computed;
+  final ValueChanged<double?> onChanged;
+  final double scale;
+  final int decimals;
+  final String suffix;
+
+  @override
+  Widget build(BuildContext context) => _Field(
+    label,
+    NumberField(
+      value: typed ?? computed,
+      scale: scale,
+      decimals: decimals,
+      suffix: suffix,
+      dense: true,
+      highlight: typed == null,
+      onChanged: onChanged,
+    ),
+    trailing: typed == null
+        ? null
+        : IconButton(
+            tooltip: 'Revenir à la valeur calculée',
+            icon: const Icon(Icons.restart_alt, size: 20),
+            onPressed: () => onChanged(null),
+          ),
+  );
 }
 
 class _Amount extends StatelessWidget {

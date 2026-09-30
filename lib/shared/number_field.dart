@@ -22,6 +22,10 @@ class NumberField extends StatefulWidget {
   });
 
   final double value;
+
+  /// Must store the value as typed: a clamped or rounded value comes back
+  /// as [value] and rewrites the text mid-typing (typing "42" into an age
+  /// field clamped at 18 turns "4" into "18").
   final ValueChanged<double> onChanged;
   final String suffix;
   final int decimals;

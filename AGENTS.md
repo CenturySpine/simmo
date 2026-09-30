@@ -53,12 +53,16 @@ gh <cmd>                                     # CLI GitHub (global)
   (widgets communs), `test/` en miroir.
 - Calculs financiers en Dart pur, testés unitairement, tout côté web app (aucun serveur).
 - Chiffres réglementaires et de marché (notaire, impôt, Action Logement, seuils d'endettement)
-  dans `lib/features/simulation/domain/rules.dart`, PTZ dans `ptz.dart`. Les mettre à jour quand
-  la règle change.
+  dans `lib/features/simulation/domain/rules.dart`, PTZ dans `ptz.dart`, garantie Crédit Logement
+  (relevée sur leur simulateur) dans `guarantee.dart`, taux d'assurance par âge dans `insurance.dart`.
+  Les mettre à jour quand la règle change.
 - Cinq paramètres principaux (prix, apport, emprunt, durée, mensualité), tous saisissables : deux
   sont calculés, choisis parmi les moins récemment saisis (`dashboard_page.dart`).
-- Revenus, revenu fiscal, taux et prix saisi sont gardés sur l'appareil (stockage local du
+- Revenus, revenu fiscal, taux, prix saisi, âge et taux de prélèvement saisi sont gardés sur l'appareil (stockage local du
   navigateur, `saved_inputs.dart`) et rechargés à l'ouverture.
+- Zone du bien : recherche par commune dans `assets/data/zonage_abc.csv`, fichier officiel du
+  zonage ABC (data.gouv.fr, « Liste des communes selon le zonage ABC ») gardé tel que publié. À
+  chaque nouvel arrêté, remplacer le fichier par la nouvelle version.
 - Seul garde-fou : la couleur du taux d'endettement (vert ; orange > 33 % ; rouge > 35 %). Aucune
   autre alerte ni plafond de saisie.
 - `test/features/simulation/domain/simulator_test.dart` reproduit deux propositions de courtier :

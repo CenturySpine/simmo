@@ -62,6 +62,8 @@ class SimulationResult {
     required this.debtRatioBefore,
     required this.debtRatioAfter,
     required this.incomeTax,
+    required this.withholdingRate,
+    required this.insuranceRate,
     required this.residualBefore,
     required this.residualAfter,
     required this.paymentJump,
@@ -93,7 +95,13 @@ class SimulationResult {
   final double monthlyPayment;
   final double debtRatioBefore;
   final double debtRatioAfter;
+
+  /// Monthly income tax withheld.
   final double incomeTax;
+  final double withholdingRate;
+
+  /// Borrower insurance rate applied (typed or usual for the age).
+  final double insuranceRate;
 
   /// Income left after tax, rent or loans, before and after the project.
   final double residualBefore;

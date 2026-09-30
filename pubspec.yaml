@@ -25,6 +25,9 @@ flutter:
   assets:
     # Font licence, added to Flutter's licence page (main.dart).
     - assets/fonts/LICENSE-plus-jakarta-sans.txt
+    # Official ABC zoning by commune (data.gouv.fr, Ministère de la Transition
+    # écologique), kept as published: replace it when a new list comes out.
+    - assets/data/zonage_abc.csv
   fonts:
     # Plus Jakarta Sans (OFL, github.com/tokotype/PlusJakartaSans), bundled so
     # it works offline.

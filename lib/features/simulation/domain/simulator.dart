@@ -1,6 +1,8 @@
 import 'dart:math';
 
+import 'guarantee.dart';
 import 'income_tax.dart';
+import 'insurance.dart';
 import 'notary_fees.dart';
 import 'ptz.dart';
 import 'rules.dart';
@@ -57,7 +59,9 @@ SimulationResult simulate(SimulationInput input) {
         ? _bisect(0, 20e6, (p) => _borrowed(input, p, down) <= loan)
         : 0;
   } else {
-    down = _fixedCosts(input, price) + _guarantee(input, loan) - loan;
+    final ptz = ptzOutcome(input, _operationCost(input, price));
+    final guarantee = loan > 0 ? _split(input, ptz, loan).guarantee : 0;
+    down = _fixedCosts(input, price) + guarantee - loan;
     feasible = down >= 0;
     down = max(0, down);
   }
@@ -122,16 +126,85 @@ double _notary(SimulationInput input, double price) => notaryFees(
   miscFees: input.notaryMiscFees,
 );
 
-double _guarantee(SimulationInput input, double borrowed) =>
-    borrowed > 0 ? input.guaranteeRate * borrowed + input.guaranteeFixed : 0;
+/// Price, works and agency fees: the PTZ operation cost (notary excluded).
+double _operationCost(SimulationInput input, double price) =>
+    price + input.works + input.agencyFees;
 
-/// Total borrowed: the guarantee is financed too, so
-/// borrowed = need + rate × borrowed + fixed.
+/// A total loan split between the PTZ, Action Logement and the main loan,
+/// with the guarantee it costs.
+class _Split {
+  _Split(this.ptz, this.actionLogement, this.main, this.guarantee);
+
+  final double ptz;
+  final double actionLogement;
+  final double main;
+  final double guarantee;
+}
+
+_Split _split(SimulationInput input, PtzOutcome ptz, double borrowed) {
+  final ratio = ptz.otherLoansRatio;
+  final ptzAmount = min(ptz.maxAmount, borrowed * ratio / (1 + ratio));
+  final al = max(
+    0.0,
+    min(
+      min(input.actionLogement, Rules.actionLogementMax),
+      borrowed - ptzAmount,
+    ),
+  );
+  final main = borrowed - ptzAmount - al;
+  double fee(double amount) =>
+      creditLogementFee(amount, efficientHome: input.efficientHome);
+  // Crédit Logement charges each loan; Action Logement needs no guarantee.
+  final guarantee = borrowed <= 0
+      ? 0.0
+      : input.guaranteeFees ?? fee(main) + fee(ptzAmount);
+  return _Split(ptzAmount, al, main, guarantee);
+}
+
+/// Total borrowed and its split. The guarantee is financed too: fixed point
+/// of borrowed = need + guarantee(borrowed), the fee growing by less than
+/// 1.5% of the loan.
+(double, _Split) _financing(
+  SimulationInput input,
+  PtzOutcome ptz,
+  double need,
+) {
+  if (need <= 0) return (0, _split(input, ptz, 0));
+  var borrowed = need;
+  var split = _split(input, ptz, borrowed);
+  for (var i = 0; i < 100; i++) {
+    final next = need + split.guarantee;
+    if ((next - borrowed).abs() < 1e-9) break;
+    borrowed = next;
+    split = _split(input, ptz, borrowed);
+  }
+  return (borrowed, split);
+}
+
 double _borrowed(SimulationInput input, double price, double down) {
-  final need = _fixedCosts(input, price) - down;
-  return need > 0
-      ? (need + input.guaranteeFixed) / (1 - input.guaranteeRate)
-      : 0;
+  final ptz = ptzOutcome(input, _operationCost(input, price));
+  return _financing(input, ptz, _fixedCosts(input, price) - down).$1;
+}
+
+double _insuranceRate(SimulationInput input) =>
+    input.insuranceRate ??
+    usualInsuranceRate(
+      age: input.borrowerAge,
+      bankContract: input.bankInsurance,
+    );
+
+/// Withholding rate: typed from the payslip, or the income tax estimated
+/// from the reference tax income over the net income.
+double _withholdingRate(SimulationInput input) {
+  final typed = input.withholdingRate;
+  if (typed != null) return typed;
+  if (input.netMonthlyIncome <= 0) return 0;
+  final tax = annualIncomeTax(
+    taxableIncome: input.referenceTaxIncome,
+    couple: input.couple,
+    children: input.children,
+  );
+  return tax / 12 / input.netMonthlyIncome;
 }
 
 /// Monthly payment allowed by the effort parameter (all loans, insurance
@@ -197,23 +270,17 @@ class _Plan {
 
 _Plan _plan(SimulationInput input, double price, double down, int months) {
   final notary = _notary(input, price);
-  final operationCost = price + input.works + input.agencyFees;
+  final operationCost = _operationCost(input, price);
   final ptz = ptzOutcome(input, operationCost);
-  final borrowed = _borrowed(input, price, down);
-  final guarantee = _guarantee(input, borrowed);
-  final ratio = ptz.otherLoansRatio;
-  final ptzAmount = min(ptz.maxAmount, borrowed * ratio / (1 + ratio));
-  final alAmount = max(
-    0.0,
-    min(
-      min(input.actionLogement, Rules.actionLogementMax),
-      borrowed - ptzAmount,
-    ),
-  );
-  final mainAmount = borrowed - ptzAmount - alAmount;
+  final (_, split) = _financing(input, ptz, _fixedCosts(input, price) - down);
+  final guarantee = split.guarantee;
+  final ptzAmount = split.ptz;
+  final alAmount = split.actionLogement;
+  final mainAmount = split.main;
+  final insuranceRate = _insuranceRate(input);
 
   double insurance(double amount) =>
-      amount * input.insuranceRate * input.insuranceCoverage / 12;
+      amount * insuranceRate * input.insuranceCoverage / 12;
 
   final aids = <_Loan>[];
   if (ptzAmount > 0) {
@@ -345,14 +412,8 @@ SimulationResult _result(
   bool feasible = true,
 }) {
   final income = retainedIncome(input);
-  final tax =
-      input.monthlyIncomeTax ??
-      annualIncomeTax(
-            taxableIncome: input.referenceTaxIncome,
-            couple: input.couple,
-            children: input.children,
-          ) /
-          12;
+  final withholding = _withholdingRate(input);
+  final tax = withholding * input.netMonthlyIncome;
   final monthly = plan.maxMonthly;
   final main = plan.loans
       .where((loan) => loan.kind == LoanKind.main)
@@ -401,6 +462,8 @@ SimulationResult _result(
         : 0,
     debtRatioAfter: income > 0 ? (monthly + input.otherLoans) / income : 0,
     incomeTax: tax,
+    withholdingRate: withholding,
+    insuranceRate: _insuranceRate(input),
     residualBefore: income - tax - input.currentRent - input.otherLoans,
     residualAfter: income - tax - monthly - input.otherLoans,
     paymentJump: input.currentRent > 0 ? monthly - input.currentRent : 0,

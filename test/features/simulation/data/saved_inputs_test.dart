@@ -6,7 +6,7 @@ import 'package:simmo/features/simulation/data/saved_inputs.dart';
 import 'package:simmo/features/simulation/domain/simulation_input.dart';
 
 void main() {
-  test('income, tax income and rate are saved when they change', () async {
+  test('income, tax income, rate, age and withholding are saved', () async {
     SharedPreferences.setMockInitialValues({});
     final saved = SavedInputs(await SharedPreferences.getInstance());
     const before = SimulationInput();
@@ -14,18 +14,30 @@ void main() {
       before,
       before.copyWith(
         netMonthlyIncome: 3210.5,
-        referenceTaxIncome: 48000,
+        referenceTaxIncome: 36000,
         rate: 0.034,
         price: 300000,
+        borrowerAge: 42,
+        withholdingRate: () => 0.12,
       ),
     );
 
     final restored = saved.restore(const SimulationInput());
     expect(restored.netMonthlyIncome, 3210.5);
-    expect(restored.referenceTaxIncome, 48000);
+    expect(restored.referenceTaxIncome, 36000);
     expect(restored.rate, 0.034);
+    expect(restored.borrowerAge, 42);
+    expect(restored.withholdingRate, 0.12);
     // A computed price is not saved.
     expect(saved.hasPrice, isFalse);
+  });
+
+  test('resetting the withholding rate forgets it', () async {
+    SharedPreferences.setMockInitialValues({'withholdingRate': '0.12'});
+    final saved = SavedInputs(await SharedPreferences.getInstance());
+    final typed = saved.restore(const SimulationInput());
+    saved.save(typed, typed.copyWith(withholdingRate: () => null));
+    expect(saved.restore(const SimulationInput()).withholdingRate, isNull);
   });
 
   testWidgets('a saved price is restored as an input', (tester) async {

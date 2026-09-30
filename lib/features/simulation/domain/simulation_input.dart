@@ -51,17 +51,19 @@ class SimulationInput {
     this.notaryMiscFees = 1600,
     this.bankFees = 1000,
     this.brokerFees = 2900,
-    this.guaranteeRate = 0.01093,
-    this.guaranteeFixed = 368,
-    this.insuranceRate = 0.005,
+    this.guaranteeFees,
+    this.efficientHome = false,
+    this.borrowerAge = 35,
+    this.bankInsurance = true,
+    this.insuranceRate,
     this.insuranceCoverage = 1,
     this.couple = false,
     this.children = 0,
     this.otherLoans = 0,
     this.currentRent = 0,
     this.rentalIncome = 0,
-    this.monthlyIncomeTax,
-    this.ptzEnabled = true,
+    this.withholdingRate,
+    this.ptzEnabled = false,
     this.actionLogement = 0,
     this.smoothing = true,
   });
@@ -116,13 +118,20 @@ class SimulationInput {
   final double bankFees;
   final double brokerFees;
 
-  /// Guarantee cost = [guaranteeRate] × borrowed + [guaranteeFixed]
-  /// (Crédit Logement: FMG participation + commission).
-  final double guaranteeRate;
-  final double guaranteeFixed;
+  /// Guarantee cost typed by the user; `null` = Crédit Logement grid.
+  final double? guaranteeFees;
+
+  /// Home rated A or B (DPE): cheaper Crédit Logement commission.
+  final bool efficientHome;
 
   // --- Borrower insurance (on the initial capital) ---------------------------
-  final double insuranceRate;
+  final int borrowerAge;
+
+  /// Bank group contract rather than a delegated one.
+  final bool bankInsurance;
+
+  /// Rate typed by the user; `null` = usual rate for the age and contract.
+  final double? insuranceRate;
 
   /// 1 = 100%; two borrowers insured at 100% each = 2.
   final double insuranceCoverage;
@@ -138,9 +147,10 @@ class SimulationInput {
   final double currentRent;
   final double rentalIncome;
 
-  /// Monthly income tax (withholding). `null` = estimated from
+  /// Income tax withholding rate (prélèvement à la source, on the payslip),
+  /// applied to [netMonthlyIncome]. `null` = estimated from
   /// [referenceTaxIncome].
-  final double? monthlyIncomeTax;
+  final double? withholdingRate;
 
   // --- Aids --------------------------------------------------------------------
   final bool ptzEnabled;
@@ -176,16 +186,18 @@ class SimulationInput {
     double? notaryMiscFees,
     double? bankFees,
     double? brokerFees,
-    double? guaranteeRate,
-    double? guaranteeFixed,
-    double? insuranceRate,
+    ValueGetter<double?>? guaranteeFees,
+    bool? efficientHome,
+    int? borrowerAge,
+    bool? bankInsurance,
+    ValueGetter<double?>? insuranceRate,
     double? insuranceCoverage,
     bool? couple,
     int? children,
     double? otherLoans,
     double? currentRent,
     double? rentalIncome,
-    ValueGetter<double?>? monthlyIncomeTax,
+    ValueGetter<double?>? withholdingRate,
     bool? ptzEnabled,
     double? actionLogement,
     bool? smoothing,
@@ -212,18 +224,20 @@ class SimulationInput {
     notaryMiscFees: notaryMiscFees ?? this.notaryMiscFees,
     bankFees: bankFees ?? this.bankFees,
     brokerFees: brokerFees ?? this.brokerFees,
-    guaranteeRate: guaranteeRate ?? this.guaranteeRate,
-    guaranteeFixed: guaranteeFixed ?? this.guaranteeFixed,
-    insuranceRate: insuranceRate ?? this.insuranceRate,
+    guaranteeFees: guaranteeFees != null ? guaranteeFees() : this.guaranteeFees,
+    efficientHome: efficientHome ?? this.efficientHome,
+    borrowerAge: borrowerAge ?? this.borrowerAge,
+    bankInsurance: bankInsurance ?? this.bankInsurance,
+    insuranceRate: insuranceRate != null ? insuranceRate() : this.insuranceRate,
     insuranceCoverage: insuranceCoverage ?? this.insuranceCoverage,
     couple: couple ?? this.couple,
     children: children ?? this.children,
     otherLoans: otherLoans ?? this.otherLoans,
     currentRent: currentRent ?? this.currentRent,
     rentalIncome: rentalIncome ?? this.rentalIncome,
-    monthlyIncomeTax: monthlyIncomeTax != null
-        ? monthlyIncomeTax()
-        : this.monthlyIncomeTax,
+    withholdingRate: withholdingRate != null
+        ? withholdingRate()
+        : this.withholdingRate,
     ptzEnabled: ptzEnabled ?? this.ptzEnabled,
     actionLogement: actionLogement ?? this.actionLogement,
     smoothing: smoothing ?? this.smoothing,
