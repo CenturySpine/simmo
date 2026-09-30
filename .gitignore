@@ -1,0 +1,40 @@
+# --- Secrets and local configuration ---
+env/*.json
+!env/example.json
+*.local
+.env
+.env.*
+
+# --- Flutter / Dart ---
+.dart_tool/
+.pub-cache/
+build/
+coverage/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# FVM: keep .fvmrc (pinned version), ignore the locally linked SDK
+.fvm/
+
+# --- Node (pinned CLIs) ---
+node_modules/
+npm-debug.log*
+
+# --- Vercel / Firebase ---
+.vercel/
+.firebase/
+firebase-debug.log*
+
+# --- IDE ---
+.idea/
+*.iml
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+*.log

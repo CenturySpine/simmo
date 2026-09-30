@@ -1,0 +1,9 @@
+{
+  "name": "simmo",
+  "private": true,
+  "description": "Pins the Vercel and Firebase CLIs for reproducible `npx vercel` / `npx firebase` (no Node code in the app).",
+  "devDependencies": {
+    "firebase-tools": "15.32.0",
+    "vercel": "61.1.0"
+  }
+}

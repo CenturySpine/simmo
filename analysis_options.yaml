@@ -1,0 +1,16 @@
+# `flutter analyze --fatal-infos` runs on every Vercel build: any lint blocks it.
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - node_modules/**
+    - web/**
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
+linter:
+  rules:
+    prefer_single_quotes: true
