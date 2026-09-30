@@ -51,7 +51,18 @@ gh <cmd>                                     # CLI GitHub (global)
 
 - Feature-first : `lib/core/` (thème, config), `lib/features/<feature>/`, `lib/shared/`
   (widgets communs), `test/` en miroir.
-- Calculs financiers en Dart pur, testés unitairement.
+- Calculs financiers en Dart pur, testés unitairement, tout côté web app (aucun serveur).
+- Chiffres réglementaires et de marché (notaire, impôt, Action Logement, seuils d'endettement)
+  dans `lib/features/simulation/domain/rules.dart`, PTZ dans `ptz.dart`. Les mettre à jour quand
+  la règle change.
+- Cinq paramètres principaux (prix, apport, emprunt, durée, mensualité), tous saisissables : deux
+  sont calculés, choisis parmi les moins récemment saisis (`dashboard_page.dart`).
+- Revenus, revenu fiscal, taux et prix saisi sont gardés sur l'appareil (stockage local du
+  navigateur, `saved_inputs.dart`) et rechargés à l'ouverture.
+- Seul garde-fou : la couleur du taux d'endettement (vert ; orange > 33 % ; rouge > 35 %). Aucune
+  autre alerte ni plafond de saisie.
+- `test/features/simulation/domain/simulator_test.dart` reproduit deux propositions de courtier :
+  tout changement de calcul doit les garder vertes.
 
 ## Design
 

@@ -1,0 +1,231 @@
+import 'package:flutter/foundation.dart';
+
+/// The five main parameters: two are computed from the three others.
+enum MainField { price, downPayment, loan, duration, payment }
+
+const _financing = {MainField.price, MainField.downPayment, MainField.loan};
+const _repayment = {MainField.loan, MainField.duration, MainField.payment};
+
+/// Two computed fields are consistent when one sits on the financing side
+/// (price, down payment, loan) and one on the repayment side (loan,
+/// duration, payment).
+bool isSolvable(Set<MainField> computed) =>
+    computed.length == 2 &&
+    computed.any(_financing.contains) &&
+    computed.any(_repayment.contains);
+
+/// How the borrower's monthly effort is expressed.
+enum EffortMode { debtRatio, payment }
+
+enum PropertyKind { existing, newBuild }
+
+enum DwellingType { apartment, house }
+
+/// PTZ zoning (A includes A bis).
+enum PtzZone { a, b1, b2, c }
+
+/// Everything the user can set. Rates are fractions (0.035 = 3.5%), amounts
+/// in euros, durations in months.
+@immutable
+class SimulationInput {
+  const SimulationInput({
+    this.computed = const {MainField.price, MainField.loan},
+    this.price = 250000,
+    this.downPayment = 30000,
+    this.loanAmount = 230000,
+    this.durationMonths = 300,
+    this.effortMode = EffortMode.debtRatio,
+    this.debtRatio = 0.35,
+    this.monthlyPayment = 1200,
+    this.netMonthlyIncome = 4000,
+    this.referenceTaxIncome = 40000,
+    this.rate = 0.035,
+    this.propertyKind = PropertyKind.existing,
+    this.dwellingType = DwellingType.apartment,
+    this.zone = PtzZone.b1,
+    this.firstTimeBuyer = true,
+    this.raisedTransferTax = true,
+    this.works = 0,
+    this.agencyFees = 0,
+    this.furniture = 0,
+    this.notaryMiscFees = 1600,
+    this.bankFees = 1000,
+    this.brokerFees = 2900,
+    this.guaranteeRate = 0.01093,
+    this.guaranteeFixed = 368,
+    this.insuranceRate = 0.005,
+    this.insuranceCoverage = 1,
+    this.couple = false,
+    this.children = 0,
+    this.otherLoans = 0,
+    this.currentRent = 0,
+    this.rentalIncome = 0,
+    this.monthlyIncomeTax,
+    this.ptzEnabled = true,
+    this.actionLogement = 0,
+    this.smoothing = true,
+  });
+
+  // --- Main parameters -----------------------------------------------------
+  final Set<MainField> computed;
+  final double price;
+  final double downPayment;
+
+  /// Total borrowed, all loans included.
+  final double loanAmount;
+  final int durationMonths;
+  final EffortMode effortMode;
+
+  /// Target debt ratio, used when [effortMode] is [EffortMode.debtRatio].
+  final double debtRatio;
+
+  /// Target monthly payment (all loans, insurance included), used when
+  /// [effortMode] is [EffortMode.payment].
+  final double monthlyPayment;
+  final double netMonthlyIncome;
+
+  /// Revenu fiscal de référence N-2 (PTZ eligibility, income tax estimate).
+  final double referenceTaxIncome;
+
+  /// Nominal rate of the main loan.
+  final double rate;
+
+  // --- Project ---------------------------------------------------------------
+  final PropertyKind propertyKind;
+  final DwellingType dwellingType;
+  final PtzZone zone;
+
+  /// No main-residence ownership in the last 2 years: PTZ, and the 4.50%
+  /// transfer tax rate even where the department raised it.
+  final bool firstTimeBuyer;
+
+  /// The department charges 5.00% instead of 4.50% (88 departments in 2026).
+  final bool raisedTransferTax;
+  final double works;
+
+  /// Agency fees paid by the buyer (not subject to transfer taxes).
+  final double agencyFees;
+
+  /// Furniture included in the price (not subject to transfer taxes).
+  final double furniture;
+
+  /// Notary formalities and disbursements.
+  final double notaryMiscFees;
+
+  // --- Fees --------------------------------------------------------------------
+  final double bankFees;
+  final double brokerFees;
+
+  /// Guarantee cost = [guaranteeRate] × borrowed + [guaranteeFixed]
+  /// (Crédit Logement: FMG participation + commission).
+  final double guaranteeRate;
+  final double guaranteeFixed;
+
+  // --- Borrower insurance (on the initial capital) ---------------------------
+  final double insuranceRate;
+
+  /// 1 = 100%; two borrowers insured at 100% each = 2.
+  final double insuranceCoverage;
+
+  // --- Household ---------------------------------------------------------------
+  final bool couple;
+  final int children;
+
+  /// Monthly payments of loans that continue after the project.
+  final double otherLoans;
+
+  /// Rent paid today, which stops with the purchase.
+  final double currentRent;
+  final double rentalIncome;
+
+  /// Monthly income tax (withholding). `null` = estimated from
+  /// [referenceTaxIncome].
+  final double? monthlyIncomeTax;
+
+  // --- Aids --------------------------------------------------------------------
+  final bool ptzEnabled;
+  final double actionLogement;
+
+  /// Main loan in tiers so the total monthly payment stays constant while
+  /// the PTZ or Action Logement loan runs.
+  final bool smoothing;
+
+  int get adults => couple ? 2 : 1;
+  int get persons => adults + children;
+
+  SimulationInput copyWith({
+    Set<MainField>? computed,
+    double? price,
+    double? downPayment,
+    double? loanAmount,
+    int? durationMonths,
+    EffortMode? effortMode,
+    double? debtRatio,
+    double? monthlyPayment,
+    double? netMonthlyIncome,
+    double? referenceTaxIncome,
+    double? rate,
+    PropertyKind? propertyKind,
+    DwellingType? dwellingType,
+    PtzZone? zone,
+    bool? firstTimeBuyer,
+    bool? raisedTransferTax,
+    double? works,
+    double? agencyFees,
+    double? furniture,
+    double? notaryMiscFees,
+    double? bankFees,
+    double? brokerFees,
+    double? guaranteeRate,
+    double? guaranteeFixed,
+    double? insuranceRate,
+    double? insuranceCoverage,
+    bool? couple,
+    int? children,
+    double? otherLoans,
+    double? currentRent,
+    double? rentalIncome,
+    ValueGetter<double?>? monthlyIncomeTax,
+    bool? ptzEnabled,
+    double? actionLogement,
+    bool? smoothing,
+  }) => SimulationInput(
+    computed: computed ?? this.computed,
+    price: price ?? this.price,
+    downPayment: downPayment ?? this.downPayment,
+    loanAmount: loanAmount ?? this.loanAmount,
+    durationMonths: durationMonths ?? this.durationMonths,
+    effortMode: effortMode ?? this.effortMode,
+    debtRatio: debtRatio ?? this.debtRatio,
+    monthlyPayment: monthlyPayment ?? this.monthlyPayment,
+    netMonthlyIncome: netMonthlyIncome ?? this.netMonthlyIncome,
+    referenceTaxIncome: referenceTaxIncome ?? this.referenceTaxIncome,
+    rate: rate ?? this.rate,
+    propertyKind: propertyKind ?? this.propertyKind,
+    dwellingType: dwellingType ?? this.dwellingType,
+    zone: zone ?? this.zone,
+    firstTimeBuyer: firstTimeBuyer ?? this.firstTimeBuyer,
+    raisedTransferTax: raisedTransferTax ?? this.raisedTransferTax,
+    works: works ?? this.works,
+    agencyFees: agencyFees ?? this.agencyFees,
+    furniture: furniture ?? this.furniture,
+    notaryMiscFees: notaryMiscFees ?? this.notaryMiscFees,
+    bankFees: bankFees ?? this.bankFees,
+    brokerFees: brokerFees ?? this.brokerFees,
+    guaranteeRate: guaranteeRate ?? this.guaranteeRate,
+    guaranteeFixed: guaranteeFixed ?? this.guaranteeFixed,
+    insuranceRate: insuranceRate ?? this.insuranceRate,
+    insuranceCoverage: insuranceCoverage ?? this.insuranceCoverage,
+    couple: couple ?? this.couple,
+    children: children ?? this.children,
+    otherLoans: otherLoans ?? this.otherLoans,
+    currentRent: currentRent ?? this.currentRent,
+    rentalIncome: rentalIncome ?? this.rentalIncome,
+    monthlyIncomeTax: monthlyIncomeTax != null
+        ? monthlyIncomeTax()
+        : this.monthlyIncomeTax,
+    ptzEnabled: ptzEnabled ?? this.ptzEnabled,
+    actionLogement: actionLogement ?? this.actionLogement,
+    smoothing: smoothing ?? this.smoothing,
+  );
+}

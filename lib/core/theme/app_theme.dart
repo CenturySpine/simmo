@@ -202,6 +202,62 @@ ThemeData buildAppTheme() {
       focusedErrorBorder: fieldBorder(AppColors.danger, 2),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     ),
+    sliderTheme: SliderThemeData(
+      activeTrackColor: AppColors.primary,
+      inactiveTrackColor: AppColors.primaryContainer,
+      thumbColor: AppColors.primary,
+      overlayColor: AppColors.primary.withValues(alpha: 0.12),
+      valueIndicatorColor: AppColors.text,
+      valueIndicatorTextStyle: style(
+        13,
+        FontWeight.w700,
+        color: AppColors.surface,
+      ),
+      trackHeight: 6,
+      activeTickMarkColor: Colors.transparent,
+      inactiveTickMarkColor: Colors.transparent,
+    ),
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: ButtonStyle(
+        shape: WidgetStateProperty.all(controlShape),
+        side: WidgetStateProperty.all(
+          const BorderSide(color: AppColors.border, width: 1.5),
+        ),
+        backgroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.primaryContainer
+              : AppColors.surface,
+        ),
+        foregroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.onPrimaryContainer
+              : AppColors.textSecondary,
+        ),
+        textStyle: WidgetStateProperty.all(style(14, FontWeight.w700)),
+        visualDensity: VisualDensity.compact,
+      ),
+    ),
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.all(AppColors.surface),
+      trackColor: WidgetStateProperty.resolveWith(
+        (states) => states.contains(WidgetState.selected)
+            ? AppColors.primary
+            : AppColors.textDisabled,
+      ),
+      trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+    ),
+    expansionTileTheme: const ExpansionTileThemeData(
+      shape: Border(),
+      collapsedShape: Border(),
+      tilePadding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      childrenPadding: EdgeInsets.fromLTRB(20, 0, 20, 20),
+      iconColor: AppColors.textSecondary,
+      collapsedIconColor: AppColors.textSecondary,
+    ),
+    progressIndicatorTheme: const ProgressIndicatorThemeData(
+      color: AppColors.primary,
+      linearTrackColor: AppColors.primaryContainer,
+    ),
     textSelectionTheme: TextSelectionThemeData(
       cursorColor: AppColors.primary,
       selectionColor: AppColors.primary.withValues(alpha: 0.25),

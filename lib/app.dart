@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/theme/app_theme.dart';
-import 'features/home/home_page.dart';
+import 'features/simulation/data/saved_inputs.dart';
+import 'features/simulation/ui/dashboard_page.dart';
 
 class SimmoApp extends StatelessWidget {
-  const SimmoApp({super.key});
+  const SimmoApp({super.key, this.saved});
+
+  final SavedInputs? saved;
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +21,7 @@ class SimmoApp extends StatelessWidget {
       locale: const Locale('fr', 'FR'),
       supportedLocales: const [Locale('fr', 'FR')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      home: const HomePage(),
+      home: DashboardPage(saved: saved),
     );
   }
 }

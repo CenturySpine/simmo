@@ -36,6 +36,9 @@ abstract final class AppColors {
   static const dangerContainer = Color(0xFFFDECEC);
   static const onDangerContainer = Color(0xFFB42328);
 
+  /// Close to a limit (debt ratio above 33%). 5.3:1 on white.
+  static const warning = Color(0xFFB54708);
+
   /// Positive outcome (e.g. an affordable loan).
   static const success = Color(0xFF0A7A47);
   static const successContainer = Color(0xFFE2F6EA);
