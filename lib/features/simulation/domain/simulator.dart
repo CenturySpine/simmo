@@ -106,13 +106,14 @@ SimulationResult _shortestDuration(
   return _result(input, _plan(input, price, down, 360), feasible: false);
 }
 
-/// Price, notary fees, works, agency, bank and broker fees: everything to
-/// finance except the guarantee.
+/// Price, notary fees, works, agency, co-ownership calls, bank and broker
+/// fees: everything to finance except the guarantee.
 double _fixedCosts(SimulationInput input, double price) =>
     price +
     _notary(input, price) +
     input.works +
     input.agencyFees +
+    input.condoCalls +
     input.bankFees +
     input.brokerFees;
 
@@ -357,7 +358,12 @@ _Plan _plan(SimulationInput input, double price, double down, int months) {
     notary: notary,
     guarantee: guarantee,
     totalCost:
-        operationCost + notary + input.bankFees + input.brokerFees + guarantee,
+        operationCost +
+        notary +
+        input.condoCalls +
+        input.bankFees +
+        input.brokerFees +
+        guarantee,
     ptz: ptz,
     loans: loans,
     totals: totals,
@@ -439,6 +445,7 @@ SimulationResult _result(
     brokerFees: input.brokerFees,
     works: input.works,
     agencyFees: input.agencyFees,
+    condoCalls: input.condoCalls,
     totalCost: plan.totalCost,
     loans: [
       for (final loan in plan.loans)

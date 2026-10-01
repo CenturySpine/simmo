@@ -55,6 +55,7 @@ class SimulationResult {
     required this.brokerFees,
     required this.works,
     required this.agencyFees,
+    required this.condoCalls,
     required this.totalCost,
     required this.loans,
     required this.tiers,
@@ -86,7 +87,11 @@ class SimulationResult {
   final double works;
   final double agencyFees;
 
-  /// Everything to finance: price, notary, fees, guarantee, works, agency.
+  /// Co-ownership calls for funds left to the buyer.
+  final double condoCalls;
+
+  /// Everything to finance: price, notary, fees, guarantee, works, agency,
+  /// co-ownership calls.
   final double totalCost;
   final List<LoanResult> loans;
   final List<PaymentTier> tiers;

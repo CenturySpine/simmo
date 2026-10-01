@@ -4,6 +4,7 @@ import '../../../core/format.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/section_card.dart';
+import '../domain/budget.dart';
 import '../domain/ptz.dart';
 import '../domain/simulation_input.dart';
 import '../domain/simulation_result.dart';
@@ -108,10 +109,11 @@ class SummaryCard extends StatelessWidget {
   }
 }
 
-/// Financing plan, loans, tiers and key figures.
+/// Housing budget, negotiation, financing plan, loans, tiers and key figures.
 class ResultDetails extends StatelessWidget {
-  const ResultDetails({super.key, required this.result});
+  const ResultDetails({super.key, required this.input, required this.result});
 
+  final SimulationInput input;
   final SimulationResult result;
 
   @override
@@ -120,6 +122,10 @@ class ResultDetails extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _Budget(housingBudget(input, r)),
+        const SizedBox(height: 16),
+        _Negotiation(input, r),
+        const SizedBox(height: 16),
         _FinancingPlan(r),
         const SizedBox(height: 16),
         _Loans(r),
@@ -171,6 +177,159 @@ class ResultDetails extends StatelessWidget {
   }
 }
 
+/// Monthly housing cost today and after the purchase, all included.
+class _Budget extends StatelessWidget {
+  const _Budget(this.b);
+
+  final HousingBudget b;
+
+  @override
+  Widget build(BuildContext context) {
+    String amount(double value) => value == 0 ? '—' : euros(value);
+    return SectionCard(
+      title: 'Budget mensuel',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _TableRow.header(['Aujourd’hui', 'Après achat']),
+          _TableRow('Loyer ou mensualité', [amount(b.rent), amount(b.payment)]),
+          _TableRow('Charges de copropriété', ['—', amount(b.condoFees)]),
+          _TableRow('Taxe foncière', ['—', amount(b.propertyTax)]),
+          _TableRow('Autres frais', [
+            amount(b.currentUtilities),
+            amount(b.utilities),
+          ]),
+          _TableRow('Épargne travaux de copro', ['—', amount(b.worksSaving)]),
+          const Divider(height: 16),
+          _TableRow('Total logement', [
+            euros(b.totalBefore),
+            euros(b.totalAfter),
+          ], strong: true),
+          const Divider(height: 16),
+          _TableRow('Revenus', [euros(b.income), euros(b.income)]),
+          _TableRow('Impôt sur le revenu', [
+            euros(-b.incomeTax),
+            euros(-b.incomeTax),
+          ]),
+          if (b.otherLoans > 0)
+            _TableRow('Autres crédits', [
+              euros(-b.otherLoans),
+              euros(-b.otherLoans),
+            ]),
+          _TableRow('Reste à vivre', [
+            euros(b.residualBefore),
+            euros(b.residualAfter),
+          ], strong: true),
+          const SizedBox(height: 8),
+          Text(
+            'Reste à vivre : revenus, moins impôt, autres crédits et total '
+            'logement. La banque ne compte que la mensualité.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Monthly effect of the asking, offer and maximum prices.
+class _Negotiation extends StatelessWidget {
+  const _Negotiation(this.input, this.r);
+
+  final SimulationInput input;
+  final SimulationResult r;
+
+  @override
+  Widget build(BuildContext context) {
+    final prices = [
+      ('Votre offre', input.offerPrice),
+      ('Votre plafond', input.maxPrice),
+      ('Prix affiché', input.askingPrice),
+    ].where((p) => p.$2 > 0);
+    return SectionCard(
+      title: 'Négociation',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (prices.isNotEmpty) ...[
+            const _TableRow.header(['Mensualité', 'Reste à vivre']),
+            for (final (label, price) in prices)
+              _priceRow(label, atPrice(input, r, price)),
+            const SizedBox(height: 8),
+          ],
+          Text(
+            'Chaque 1 000 € de plus sur le prix : '
+            '+${euros(costPerThousand(input, r), cents: true)} par mois, '
+            'à apport et durée égaux.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _priceRow(String label, SimulationResult at) => _TableRow(label, [
+    euros(at.monthlyPayment),
+    euros(housingBudget(input, at).residualAfter),
+  ], note: euros(at.price));
+}
+
+/// A label and two right-aligned columns.
+class _TableRow extends StatelessWidget {
+  const _TableRow(this.label, this.values, {this.note, this.strong = false})
+    : header = false;
+
+  const _TableRow.header(this.values)
+    : label = '',
+      note = null,
+      strong = false,
+      header = true;
+
+  final String label;
+  final List<String> values;
+
+  /// Second line under the label.
+  final String? note;
+  final bool strong;
+  final bool header;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    final labelStyle = strong
+        ? text.titleSmall
+        : text.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          );
+    final valueStyle = header
+        ? text.labelMedium
+        : strong
+        ? text.titleSmall
+        : text.bodyMedium?.copyWith(fontWeight: FontWeight.w600);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: labelStyle),
+                if (note != null) Text(note!, style: text.bodySmall),
+              ],
+            ),
+          ),
+          for (final value in values)
+            SizedBox(
+              width: 84,
+              child: Text(value, textAlign: TextAlign.end, style: valueStyle),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _FinancingPlan extends StatelessWidget {
   const _FinancingPlan(this.r);
 
@@ -191,6 +350,8 @@ class _FinancingPlan extends StatelessWidget {
           ValueRow('Frais de notaire', euros(r.notaryFees)),
           if (r.works > 0) ValueRow('Travaux', euros(r.works)),
           if (r.agencyFees > 0) ValueRow('Frais d’agence', euros(r.agencyFees)),
+          if (r.condoCalls > 0)
+            ValueRow('Appels de fonds de copropriété', euros(r.condoCalls)),
           ValueRow('Frais de dossier', euros(r.bankFees)),
           if (r.brokerFees > 0)
             ValueRow('Honoraires de courtage', euros(r.brokerFees)),

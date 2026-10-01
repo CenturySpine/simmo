@@ -58,8 +58,12 @@ gh <cmd>                                     # CLI GitHub (global)
   Les mettre à jour quand la règle change.
 - Cinq paramètres principaux (prix, apport, emprunt, durée, mensualité), tous saisissables : deux
   sont calculés, choisis parmi les moins récemment saisis (`dashboard_page.dart`).
-- Revenus, revenu fiscal, taux, prix saisi, âge et taux de prélèvement saisi sont gardés sur l'appareil (stockage local du
-  navigateur, `saved_inputs.dart`) et rechargés à l'ouverture.
+- Revenus, revenu fiscal, taux, prix saisi, âge, taux de prélèvement saisi, budget du logement et
+  prix de négociation sont gardés sur l'appareil (stockage local du navigateur, `saved_inputs.dart`)
+  et rechargés à l'ouverture.
+- Budget mensuel (vue acheteur : charges, taxe foncière, énergie, épargne travaux de copro) et
+  négociation (offre, plafond, prix affiché) dans `budget.dart`. Ils ne touchent pas aux calculs
+  bancaires, sauf les appels de fonds de copro à l'achat, financés avec le projet.
 - Zone du bien : recherche par commune dans `assets/data/zonage_abc.csv`, fichier officiel du
   zonage ABC (data.gouv.fr, « Liste des communes selon le zonage ABC ») gardé tel que publié. À
   chaque nouvel arrêté, remplacer le fichier par la nouvelle version.

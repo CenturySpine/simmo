@@ -44,6 +44,16 @@ final _custom = const SimulationInput().copyWith(
   ptzEnabled: true,
   actionLogement: 20000,
   smoothing: false,
+  condoFees: 245.6,
+  propertyTax: 1128,
+  utilities: 70,
+  currentUtilities: 90,
+  condoCalls: 210,
+  condoWorks: 9000,
+  condoWorksYears: 8,
+  askingPrice: 299000,
+  offerPrice: 279000,
+  maxPrice: 285000,
 );
 
 void main() {
@@ -51,7 +61,7 @@ void main() {
     final link = shareLink(_custom);
     expect(link, startsWith('https://simmo.centuryspine.org/#'));
     // A short opaque code, not a list of parameters.
-    expect(link.length, lessThan(140));
+    expect(link.length, lessThan(180));
     expect(link, isNot(contains('&')));
 
     final decoded = decodeInput(Uri.parse(link).fragment)!;
@@ -59,6 +69,24 @@ void main() {
     expect(decoded.computed, {MainField.downPayment, MainField.payment});
     expect(decoded.withholdingRate, 0.087);
     expect(decoded.zone, PtzZone.b2);
+    expect(decoded.condoFees, 245.6);
+    expect(decoded.condoWorksYears, 8);
+    expect(decoded.maxPrice, 285000);
+  });
+
+  test('links shared before the housing budget still open', () {
+    // Version 1 code, from before the housing budget was added.
+    final decoded = decodeInput(
+      'ARSWJLDh2g3Sn_oBwOf7CsCpB4C1GICS9AEAAACA4gmgjQbQ2REAmOYFAADgz9UBsK4VgK3'
+      'iBNCMAawCIwI',
+    )!;
+    expect(decoded.price, 287500);
+    expect(decoded.currentRent, 950);
+    expect(decoded.insuranceRate, 0.0018);
+    expect(decoded.children, 2);
+    expect(decoded.condoFees, 0);
+    expect(decoded.condoWorksYears, 10);
+    expect(simulate(decoded).monthlyPayment, closeTo(1185.93, 0.01));
   });
 
   test('the shared simulation gives the same results', () {

@@ -59,66 +59,69 @@ Future<void> showLegalNotice(BuildContext context) => showDialog<void>(
 );
 
 /// RGPD information; [onClearData] erases what this device keeps.
-Future<void> showPrivacy(BuildContext context, VoidCallback onClearData) =>
-    showDialog<void>(
-      context: context,
-      builder: (context) => _LegalDialog(
-        title: 'Confidentialité',
-        sections: const [
-          (
-            'Aucune collecte',
-            'Simmo ne collecte, ne transmet ni ne vend aucune donnée '
-                'personnelle. Tous les calculs sont faits dans votre '
-                'navigateur : aucune valeur saisie n’est envoyée à un serveur.',
-          ),
-          (
-            'Données gardées sur votre appareil',
-            'Revenus, revenu fiscal, taux, prix, âge et taux de prélèvement '
-                'saisis sont conservés dans le stockage local de votre '
-                'navigateur, pour les retrouver à votre prochaine visite. Ils '
-                'ne quittent pas votre appareil. Ce stockage sert uniquement '
-                'au service que vous utilisez et ne demande donc pas de '
-                'consentement. Vous pouvez l’effacer à tout moment.',
-          ),
-          (
-            'Liens de partage',
-            'Un lien de partage contient les valeurs de la simulation, '
-                'placées après le « # » de l’adresse, partie que le '
-                'navigateur n’envoie pas au serveur. Toute personne qui reçoit '
-                'le lien voit ces valeurs : ne le partagez qu’avec des '
-                'personnes de confiance.',
-          ),
-          (
-            'Cookies et traceurs',
-            'Aucun cookie, aucune mesure d’audience, aucune publicité. '
-                'Polices et données sont servies par le site lui-même, sans '
-                'service tiers.',
-          ),
-          (
-            'Hébergement',
-            'Comme tout hébergeur, Vercel traite des données techniques de '
-                'connexion (adresse IP, date, page demandée) pour la sécurité '
-                'et le fonctionnement du site, selon sa politique de '
-                'confidentialité (vercel.com/legal/privacy-policy).',
-          ),
-          (
-            'Vos droits',
-            'Les données n’étant conservées que sur votre appareil, vous en '
-                'gardez la maîtrise : effacez-les ci-dessous ou depuis les '
-                'réglages de votre navigateur. Vous pouvez adresser une '
-                'réclamation à la CNIL (cnil.fr).',
-          ),
-        ],
-        action: TextButton.icon(
-          onPressed: () {
-            onClearData();
-            Navigator.of(context).pop();
-          },
-          icon: const Icon(Icons.delete_outline, size: 18),
-          label: const Text('Effacer les données de cet appareil'),
-        ),
+Future<void> showPrivacy(
+  BuildContext context,
+  VoidCallback onClearData,
+) => showDialog<void>(
+  context: context,
+  builder: (context) => _LegalDialog(
+    title: 'Confidentialité',
+    sections: const [
+      (
+        'Aucune collecte',
+        'Simmo ne collecte, ne transmet ni ne vend aucune donnée '
+            'personnelle. Tous les calculs sont faits dans votre '
+            'navigateur : aucune valeur saisie n’est envoyée à un serveur.',
       ),
-    );
+      (
+        'Données gardées sur votre appareil',
+        'Revenus, revenu fiscal, taux, prix, âge, taux de prélèvement, '
+            'budget du logement (charges, taxe foncière, travaux) et prix '
+            'de négociation saisis sont conservés dans le stockage local de '
+            'votre navigateur, pour les retrouver à votre prochaine visite. '
+            'Ils ne quittent pas votre appareil. Ce stockage sert '
+            'uniquement au service que vous utilisez et ne demande donc '
+            'pas de consentement. Vous pouvez l’effacer à tout moment.',
+      ),
+      (
+        'Liens de partage',
+        'Un lien de partage contient les valeurs de la simulation, '
+            'placées après le « # » de l’adresse, partie que le '
+            'navigateur n’envoie pas au serveur. Toute personne qui reçoit '
+            'le lien voit ces valeurs : ne le partagez qu’avec des '
+            'personnes de confiance.',
+      ),
+      (
+        'Cookies et traceurs',
+        'Aucun cookie, aucune mesure d’audience, aucune publicité. '
+            'Polices et données sont servies par le site lui-même, sans '
+            'service tiers.',
+      ),
+      (
+        'Hébergement',
+        'Comme tout hébergeur, Vercel traite des données techniques de '
+            'connexion (adresse IP, date, page demandée) pour la sécurité '
+            'et le fonctionnement du site, selon sa politique de '
+            'confidentialité (vercel.com/legal/privacy-policy).',
+      ),
+      (
+        'Vos droits',
+        'Les données n’étant conservées que sur votre appareil, vous en '
+            'gardez la maîtrise : effacez-les ci-dessous ou depuis les '
+            'réglages de votre navigateur. Vous pouvez adresser une '
+            'réclamation à la CNIL (cnil.fr).',
+      ),
+    ],
+    action: TextButton.icon(
+      onPressed: () {
+        onClearData();
+        Navigator.of(context).pop();
+      },
+      icon: const Icon(Icons.delete_outline, size: 18),
+      label: const Text('Effacer les données de cet appareil'),
+    ),
+  ),
+);
 
 class _LegalDialog extends StatelessWidget {
   const _LegalDialog({

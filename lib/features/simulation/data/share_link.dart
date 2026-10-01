@@ -12,7 +12,8 @@ String shareLink(SimulationInput input) => '$siteUrl#${encodeInput(input)}';
 
 /// Format version, first byte of the code. Fields below are read in this
 /// exact order: never reorder them; a change of layout gets a new version.
-const _version = 1;
+/// Version 2 appends the housing budget and negotiation to version 1.
+const _version = 2;
 
 /// Amounts are stored in cents, rates in units of 1e-7.
 const _cents = 100;
@@ -74,6 +75,20 @@ String encodeInput(SimulationInput i) {
   out.varint(i.durationMonths);
   out.varint(i.borrowerAge);
   out.varint(i.children);
+  for (final amount in [
+    i.condoFees,
+    i.propertyTax,
+    i.utilities,
+    i.currentUtilities,
+    i.condoCalls,
+    i.condoWorks,
+    i.askingPrice,
+    i.offerPrice,
+    i.maxPrice,
+  ]) {
+    out.varint((amount * _cents).round());
+  }
+  out.varint(i.condoWorksYears);
   return base64Url.encode(out.bytes).replaceAll('=', '');
 }
 
@@ -82,7 +97,8 @@ SimulationInput? decodeInput(String fragment) {
   try {
     final padded = fragment.padRight((fragment.length + 3) ~/ 4 * 4, '=');
     final r = _Reader(base64Url.decode(padded));
-    if (r.byte() != _version) return null;
+    final version = r.byte();
+    if (version < 1 || version > _version) return null;
     final pairByte = r.byte();
     final computed = {
       MainField.values[pairByte ~/ 16],
@@ -119,6 +135,18 @@ SimulationInput? decodeInput(String fragment) {
     final durationMonths = r.varint();
     final borrowerAge = r.varint();
     final children = r.varint();
+    const none = SimulationInput();
+    final v2 = version >= 2;
+    final condoFees = v2 ? amount() : none.condoFees;
+    final propertyTax = v2 ? amount() : none.propertyTax;
+    final utilities = v2 ? amount() : none.utilities;
+    final currentUtilities = v2 ? amount() : none.currentUtilities;
+    final condoCalls = v2 ? amount() : none.condoCalls;
+    final condoWorks = v2 ? amount() : none.condoWorks;
+    final askingPrice = v2 ? amount() : none.askingPrice;
+    final offerPrice = v2 ? amount() : none.offerPrice;
+    final maxPrice = v2 ? amount() : none.maxPrice;
+    final condoWorksYears = v2 ? r.varint() : none.condoWorksYears;
     if (!r.done) return null;
 
     return SimulationInput(
@@ -163,6 +191,16 @@ SimulationInput? decodeInput(String fragment) {
       ptzEnabled: f[6],
       actionLogement: actionLogement,
       smoothing: f[7],
+      condoFees: condoFees,
+      propertyTax: propertyTax,
+      utilities: utilities,
+      currentUtilities: currentUtilities,
+      condoCalls: condoCalls,
+      condoWorks: condoWorks,
+      condoWorksYears: condoWorksYears,
+      askingPrice: askingPrice,
+      offerPrice: offerPrice,
+      maxPrice: maxPrice,
     );
   } on Object {
     // Not a code from this app (bad base64, truncated, unknown field).

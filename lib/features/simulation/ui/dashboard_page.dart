@@ -198,10 +198,12 @@ class _DashboardPageState extends State<DashboardPage> {
           onEffortMode: _effortMode,
         ),
         const SizedBox(height: 16),
+        BudgetParams(input: _input, onChanged: _set),
+        const SizedBox(height: 16),
         AdvancedParams(input: _input, result: result, onChanged: _set),
       ],
     );
-    final details = ResultDetails(result: result);
+    final details = ResultDetails(input: _input, result: result);
 
     return Scaffold(
       body: SafeArea(
@@ -276,7 +278,10 @@ class _Header extends StatelessWidget {
                 'Simmo',
                 style: text.titleLarge?.copyWith(fontWeight: FontWeight.w800),
               ),
-              Text('Simulation de prêt immobilier', style: text.bodySmall),
+              Text(
+                'Simulation de prêt immobilier, avec un petit truc en plus',
+                style: text.bodySmall,
+              ),
             ],
           ),
         ),

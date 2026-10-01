@@ -222,6 +222,100 @@ class AdvancedParams extends StatelessWidget {
   }
 }
 
+/// What the purchase costs day to day and the prices at stake in the
+/// negotiation; all optional, folded away by default.
+class BudgetParams extends StatelessWidget {
+  const BudgetParams({super.key, required this.input, required this.onChanged});
+
+  final SimulationInput input;
+  final ValueChanged<SimulationInput> onChanged;
+
+  void _set(SimulationInput Function(SimulationInput) change) =>
+      onChanged(change(input));
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        title: Text(
+          'Budget et négociation',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        subtitle: Text(
+          'Charges, taxe foncière, travaux de copro, offre',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _Group('Après l’achat'),
+          _Amount(
+            'Charges de copropriété (par mois)',
+            input.condoFees,
+            (v) => _set((i) => i.copyWith(condoFees: v)),
+          ),
+          _Amount(
+            'Taxe foncière (par an)',
+            input.propertyTax,
+            (v) => _set((i) => i.copyWith(propertyTax: v)),
+          ),
+          _Amount(
+            'Énergie et assurance habitation (par mois)',
+            input.utilities,
+            (v) => _set((i) => i.copyWith(utilities: v)),
+          ),
+
+          const _Group('Travaux de copropriété'),
+          _Amount(
+            'Appels de fonds à payer à l’achat',
+            input.condoCalls,
+            (v) => _set((i) => i.copyWith(condoCalls: v)),
+          ),
+          _Amount(
+            'Votre part des travaux à venir',
+            input.condoWorks,
+            (v) => _set((i) => i.copyWith(condoWorks: v)),
+          ),
+          _Field(
+            'Dans combien d’années',
+            NumberField(
+              value: input.condoWorksYears.toDouble(),
+              suffix: 'ans',
+              dense: true,
+              onChanged: (v) =>
+                  _set((i) => i.copyWith(condoWorksYears: v.round())),
+            ),
+          ),
+
+          const _Group('Aujourd’hui, en plus du loyer'),
+          _Amount(
+            'Charges, énergie et assurance (par mois)',
+            input.currentUtilities,
+            (v) => _set((i) => i.copyWith(currentUtilities: v)),
+          ),
+
+          const _Group('Négociation'),
+          _Amount(
+            'Prix affiché',
+            input.askingPrice,
+            (v) => _set((i) => i.copyWith(askingPrice: v)),
+          ),
+          _Amount(
+            'Votre offre',
+            input.offerPrice,
+            (v) => _set((i) => i.copyWith(offerPrice: v)),
+          ),
+          _Amount(
+            'Votre plafond',
+            input.maxPrice,
+            (v) => _set((i) => i.copyWith(maxPrice: v)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _Group extends StatelessWidget {
   const _Group(this.title);
 

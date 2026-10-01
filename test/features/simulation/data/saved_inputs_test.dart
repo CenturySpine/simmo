@@ -32,6 +32,32 @@ void main() {
     expect(saved.hasPrice, isFalse);
   });
 
+  test('housing budget and negotiation are saved, then cleared', () async {
+    SharedPreferences.setMockInitialValues({});
+    final saved = SavedInputs(await SharedPreferences.getInstance());
+    const before = SimulationInput();
+    saved.save(
+      before,
+      before.copyWith(
+        condoFees: 245.6,
+        propertyTax: 1128,
+        condoWorks: 9000,
+        condoWorksYears: 8,
+        offerPrice: 279000,
+      ),
+    );
+
+    final restored = saved.restore(const SimulationInput());
+    expect(restored.condoFees, 245.6);
+    expect(restored.propertyTax, 1128);
+    expect(restored.condoWorks, 9000);
+    expect(restored.condoWorksYears, 8);
+    expect(restored.offerPrice, 279000);
+
+    saved.clear();
+    expect(saved.restore(const SimulationInput()).condoFees, 0);
+  });
+
   test('resetting the withholding rate forgets it', () async {
     SharedPreferences.setMockInitialValues({'withholdingRate': '0.12'});
     final saved = SavedInputs(await SharedPreferences.getInstance());

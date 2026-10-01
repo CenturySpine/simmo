@@ -66,6 +66,16 @@ class SimulationInput {
     this.ptzEnabled = false,
     this.actionLogement = 0,
     this.smoothing = true,
+    this.condoFees = 0,
+    this.propertyTax = 0,
+    this.utilities = 0,
+    this.currentUtilities = 0,
+    this.condoCalls = 0,
+    this.condoWorks = 0,
+    this.condoWorksYears = 10,
+    this.askingPrice = 0,
+    this.offerPrice = 0,
+    this.maxPrice = 0,
   });
 
   // --- Main parameters -----------------------------------------------------
@@ -160,6 +170,34 @@ class SimulationInput {
   /// the PTZ or Action Logement loan runs.
   final bool smoothing;
 
+  // --- Housing budget (buyer's view; banks ignore it) -----------------------
+  /// Co-ownership charges per month.
+  final double condoFees;
+
+  /// Property tax per year.
+  final double propertyTax;
+
+  /// Energy, home insurance and other housing costs per month, after the
+  /// purchase.
+  final double utilities;
+
+  /// Same costs paid today on top of [currentRent].
+  final double currentUtilities;
+
+  /// Co-ownership calls for funds left to the buyer at purchase: financed
+  /// like the rest of the project.
+  final double condoCalls;
+
+  /// Buyer's estimated share of co-ownership works to come, saved monthly
+  /// over [condoWorksYears].
+  final double condoWorks;
+  final int condoWorksYears;
+
+  // --- Negotiation (0 = not typed) -------------------------------------------
+  final double askingPrice;
+  final double offerPrice;
+  final double maxPrice;
+
   int get adults => couple ? 2 : 1;
   int get persons => adults + children;
 
@@ -201,6 +239,16 @@ class SimulationInput {
     bool? ptzEnabled,
     double? actionLogement,
     bool? smoothing,
+    double? condoFees,
+    double? propertyTax,
+    double? utilities,
+    double? currentUtilities,
+    double? condoCalls,
+    double? condoWorks,
+    int? condoWorksYears,
+    double? askingPrice,
+    double? offerPrice,
+    double? maxPrice,
   }) => SimulationInput(
     computed: computed ?? this.computed,
     price: price ?? this.price,
@@ -241,5 +289,15 @@ class SimulationInput {
     ptzEnabled: ptzEnabled ?? this.ptzEnabled,
     actionLogement: actionLogement ?? this.actionLogement,
     smoothing: smoothing ?? this.smoothing,
+    condoFees: condoFees ?? this.condoFees,
+    propertyTax: propertyTax ?? this.propertyTax,
+    utilities: utilities ?? this.utilities,
+    currentUtilities: currentUtilities ?? this.currentUtilities,
+    condoCalls: condoCalls ?? this.condoCalls,
+    condoWorks: condoWorks ?? this.condoWorks,
+    condoWorksYears: condoWorksYears ?? this.condoWorksYears,
+    askingPrice: askingPrice ?? this.askingPrice,
+    offerPrice: offerPrice ?? this.offerPrice,
+    maxPrice: maxPrice ?? this.maxPrice,
   );
 }
