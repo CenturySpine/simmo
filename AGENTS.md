@@ -63,6 +63,9 @@ gh <cmd>                                     # CLI GitHub (global)
 - Zone du bien : recherche par commune dans `assets/data/zonage_abc.csv`, fichier officiel du
   zonage ABC (data.gouv.fr, « Liste des communes selon le zonage ABC ») gardé tel que publié. À
   chaque nouvel arrêté, remplacer le fichier par la nouvelle version.
+- Partage : « Partager » copie `https://simmo.centuryspine.org/#<code>`, où le code compacte tous
+  les paramètres (`share_link.dart`). Ne jamais réordonner les champs du code : tout changement de
+  format passe par une nouvelle version, sinon les liens déjà partagés cassent.
 - Seul garde-fou : la couleur du taux d'endettement (vert ; orange > 33 % ; rouge > 35 %). Aucune
   autre alerte ni plafond de saisie.
 - `test/features/simulation/domain/simulator_test.dart` reproduit deux propositions de courtier :

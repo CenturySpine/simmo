@@ -1,9 +1,12 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../../../shared/native_share.dart';
 import '../../../shared/simmo_logo.dart';
 import '../data/saved_inputs.dart';
+import '../data/share_link.dart';
 import '../domain/rules.dart';
 import '../domain/simulation_input.dart';
 import '../domain/simulation_result.dart';
@@ -14,10 +17,13 @@ import 'results.dart';
 
 /// The whole app: inputs and results on one page, recomputed on every change.
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key, this.saved});
+  const DashboardPage({super.key, this.saved, this.sharedFragment = ''});
 
   /// Values kept on the device; null in tests.
   final SavedInputs? saved;
+
+  /// Fragment of the opening URL: a shared simulation, if any.
+  final String sharedFragment;
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -41,6 +47,16 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
+    // A shared link wins over the values kept on the device, which it does
+    // not overwrite.
+    final shared = decodeInput(widget.sharedFragment);
+    if (shared != null) {
+      _input = shared;
+      _edited.addAll(
+        MainField.values.where((f) => !shared.computed.contains(f)),
+      );
+      return;
+    }
     final saved = widget.saved;
     if (saved == null) return;
     _input = saved.restore(_input);
@@ -49,6 +65,37 @@ class _DashboardPageState extends State<DashboardPage> {
       _edited.add(MainField.price);
       _input = _input.copyWith(computed: _pickComputed());
     }
+  }
+
+  /// Shares a link reproducing this simulation: the share sheet on a
+  /// phone, otherwise a copy; the link is shown when the browser refuses
+  /// the clipboard.
+  Future<void> _share() async {
+    final link = shareLink(_input);
+    if (await shareNatively(title: 'Simulation Simmo', url: link)) return;
+    try {
+      await Clipboard.setData(ClipboardData(text: link));
+    } on PlatformException {
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Lien de la simulation'),
+          content: SelectableText(link),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Fermer'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Lien de la simulation copié')),
+    );
   }
 
   void _set(SimulationInput input, {bool priceTyped = false}) {
@@ -160,7 +207,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const _Header(),
+                      _Header(onShare: _share),
                       const SizedBox(height: 24),
                       if (wide)
                         Row(
@@ -200,7 +247,9 @@ class _DashboardPageState extends State<DashboardPage> {
 }
 
 class _Header extends StatelessWidget {
-  const _Header();
+  const _Header({required this.onShare});
+
+  final VoidCallback onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -220,6 +269,11 @@ class _Header extends StatelessWidget {
               Text('Simulation de prêt immobilier', style: text.bodySmall),
             ],
           ),
+        ),
+        TextButton.icon(
+          onPressed: onShare,
+          icon: const Icon(Icons.link, size: 20),
+          label: const Text('Partager'),
         ),
       ],
     );

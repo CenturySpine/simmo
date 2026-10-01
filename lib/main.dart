@@ -14,7 +14,7 @@ Future<void> main() async {
   usePathUrlStrategy();
   _registerFontLicence();
   final saved = SavedInputs(await SharedPreferences.getInstance());
-  runApp(SimmoApp(saved: saved));
+  runApp(SimmoApp(saved: saved, sharedFragment: Uri.base.fragment));
 }
 
 /// The font is bundled as an asset, not a Dart package, so Flutter's licence
