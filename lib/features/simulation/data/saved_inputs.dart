@@ -57,6 +57,20 @@ class SavedInputs {
     }
   }
 
+  /// Forgets every saved value.
+  void clear() {
+    for (final key in [
+      _price,
+      _income,
+      _taxIncome,
+      _rate,
+      _age,
+      _withholding,
+    ]) {
+      _prefs.remove(key);
+    }
+  }
+
   double? _get(String key) {
     final text = _prefs.getString(key);
     return text == null ? null : double.tryParse(text);

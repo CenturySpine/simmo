@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../shared/native_share.dart';
+import '../../legal/ui/site_footer.dart';
 import '../../../shared/simmo_logo.dart';
 import '../data/saved_inputs.dart';
 import '../data/share_link.dart';
@@ -65,6 +66,14 @@ class _DashboardPageState extends State<DashboardPage> {
       _edited.add(MainField.price);
       _input = _input.copyWith(computed: _pickComputed());
     }
+  }
+
+  /// Forgets the values kept on this device (RGPD).
+  void _clearData() {
+    widget.saved?.clear();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Données de cet appareil effacées')),
+    );
   }
 
   /// Shares a link reproducing this simulation: the share sheet on a
@@ -234,6 +243,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         const SizedBox(height: 16),
                         details,
                       ],
+                      SiteFooter(onClearData: _clearData),
                     ],
                   ),
                 ),

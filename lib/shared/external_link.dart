@@ -1,0 +1,3 @@
+// Opens a URL in a new browser tab; nothing outside the browser (tests).
+export 'external_link_stub.dart'
+    if (dart.library.js_interop) 'external_link_web.dart';

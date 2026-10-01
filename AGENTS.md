@@ -66,6 +66,9 @@ gh <cmd>                                     # CLI GitHub (global)
 - Partage : « Partager » copie `https://simmo.centuryspine.org/#<code>`, où le code compacte tous
   les paramètres (`share_link.dart`). Ne jamais réordonner les champs du code : tout changement de
   format passe par une nouvelle version, sinon les liens déjà partagés cassent.
+- Pied de page : avertissement, mentions légales, confidentialité (RGPD), « À propos »
+  (centuryspine.org), « © 2026 Simmo » (`lib/features/legal/`). Tenir ces textes à jour à chaque
+  nouvelle donnée gardée sur l'appareil ou nouveau service tiers.
 - Seul garde-fou : la couleur du taux d'endettement (vert ; orange > 33 % ; rouge > 35 %). Aucune
   autre alerte ni plafond de saisie.
 - `test/features/simulation/domain/simulator_test.dart` reproduit deux propositions de courtier :
