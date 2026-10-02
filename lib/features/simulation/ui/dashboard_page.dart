@@ -166,32 +166,34 @@ class _DashboardPageState extends State<DashboardPage> {
     MainField.downPayment => i.copyWith(downPayment: r.downPayment),
     MainField.loan => i.copyWith(loanAmount: r.borrowed),
     MainField.duration => i.copyWith(durationMonths: r.durationMonths),
-    MainField.payment =>
-      i.effortMode == EffortMode.payment
-          ? i.copyWith(monthlyPayment: r.monthlyPayment)
-          : i.copyWith(debtRatio: r.debtRatioAfter),
+    MainField.payment => switch (i.effortMode) {
+      EffortMode.payment => i.copyWith(monthlyPayment: r.monthlyPayment),
+      EffortMode.allIn => i.copyWith(
+        housingBudget: r.monthlyPayment + i.runningCosts,
+      ),
+      EffortMode.debtRatio => i.copyWith(debtRatio: r.debtRatioAfter),
+    },
   };
 
   /// Converts the effort to the other unit without changing it.
   void _effortMode(EffortMode mode) {
-    final i = _input;
+    final i = _input.copyWith(effortMode: mode);
+    final target = max(0.0, targetMonthly(_input));
     final income = retainedIncome(i);
-    _set(
-      mode == EffortMode.payment
-          ? i.copyWith(
-              effortMode: mode,
-              monthlyPayment: max(0, targetMonthly(i)).roundToDouble(),
-            )
-          : i.copyWith(
-              effortMode: mode,
-              debtRatio: income > 0
-                  ? ((i.monthlyPayment + i.otherLoans) / income).clamp(
-                      minDebtRatio,
-                      maxDebtRatio,
-                    )
-                  : Rules.debtRatioLimit,
-            ),
-    );
+    _set(switch (mode) {
+      EffortMode.payment => i.copyWith(monthlyPayment: target.roundToDouble()),
+      EffortMode.allIn => i.copyWith(
+        housingBudget: (target + i.runningCosts).roundToDouble(),
+      ),
+      EffortMode.debtRatio => i.copyWith(
+        debtRatio: income > 0
+            ? ((target + i.otherLoans) / income).clamp(
+                minDebtRatio,
+                maxDebtRatio,
+              )
+            : Rules.debtRatioLimit,
+      ),
+    });
   }
 
   @override

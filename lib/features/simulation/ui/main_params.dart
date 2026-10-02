@@ -271,8 +271,8 @@ class _DurationSlider extends StatelessWidget {
   }
 }
 
-/// Monthly effort as a debt ratio or an amount. Shows [result] when the
-/// payment is computed.
+/// Monthly effort as a debt ratio, the loan payment or the whole housing
+/// cost. Shows [result] when the payment is computed.
 class _EffortEditor extends StatelessWidget {
   const _EffortEditor({
     required this.input,
@@ -289,41 +289,41 @@ class _EffortEditor extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    final byRatio = input.effortMode == EffortMode.debtRatio;
+    final mode = input.effortMode;
     final income = retainedIncome(input);
     final r = result;
-    final ratio = r != null ? r.debtRatioAfter : input.debtRatio;
-    final amount = r != null ? r.monthlyPayment : input.monthlyPayment;
-    final shownRatio = r != null
-        ? r.debtRatioAfter
-        : byRatio
-        ? input.debtRatio
-        : income > 0
-        ? (input.monthlyPayment + input.otherLoans) / income
-        : 0.0;
-    final shownAmount = r != null
-        ? r.monthlyPayment
-        : byRatio
-        ? targetMonthly(input)
-        : input.monthlyPayment;
+    // Computed, or what the effort allows.
+    final payment = r?.monthlyPayment ?? targetMonthly(input);
+    final ratio =
+        r?.debtRatioAfter ??
+        (mode == EffortMode.debtRatio
+            ? input.debtRatio
+            : income > 0
+            ? (payment + input.otherLoans) / income
+            : 0.0);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SegmentedButton<EffortMode>(
-          segments: const [
-            ButtonSegment(
-              value: EffortMode.debtRatio,
-              label: Text('Endettement'),
-            ),
-            ButtonSegment(value: EffortMode.payment, label: Text('Montant')),
+          segments: [
+            for (final (value, label) in const [
+              (EffortMode.debtRatio, 'Endettement'),
+              (EffortMode.payment, 'Montant'),
+              (EffortMode.allIn, 'Tout compris'),
+            ])
+              ButtonSegment(
+                value: value,
+                // Three labels on a phone: shrink rather than wrap.
+                label: FittedBox(child: Text(label, maxLines: 1)),
+              ),
           ],
-          selected: {input.effortMode},
+          selected: {mode},
           showSelectedIcon: false,
           onSelectionChanged: (s) => onEffortMode(s.first),
         ),
         const SizedBox(height: 12),
-        if (byRatio)
-          Row(
+        switch (mode) {
+          EffortMode.debtRatio => Row(
             children: [
               Expanded(
                 child: Slider(
@@ -346,24 +346,44 @@ class _EffortEditor extends StatelessWidget {
                 ),
               ),
             ],
-          )
-        else
-          NumberField(
-            value: amount,
+          ),
+          EffortMode.payment => NumberField(
+            value: payment,
             decimals: 2,
             suffix: '€/mois',
             highlight: r != null,
             onChanged: (v) => onEdit(input.copyWith(monthlyPayment: v)),
           ),
+          EffortMode.allIn => NumberField(
+            value: payment + input.runningCosts,
+            decimals: 2,
+            suffix: '€/mois',
+            highlight: r != null,
+            onChanged: (v) => onEdit(input.copyWith(housingBudget: v)),
+          ),
+        },
         const SizedBox(height: 6),
         Text(
-          byRatio
-              ? 'Soit ${euros(shownAmount, cents: true)} par mois, assurance comprise'
-              : 'Soit ${percent(shownRatio)} d’endettement',
+          switch (mode) {
+            EffortMode.debtRatio =>
+              'Soit ${euros(payment, cents: true)} par mois, assurance comprise',
+            EffortMode.payment => 'Soit ${percent(ratio)} d’endettement',
+            EffortMode.allIn =>
+              'Dont ${euros(payment, cents: true)} de mensualité, soit '
+                  '${percent(ratio)} d’endettement',
+          },
           style: text.bodySmall?.copyWith(
-            color: byRatio ? null : debtRatioColor(shownRatio),
+            color: mode == EffortMode.debtRatio ? null : debtRatioColor(ratio),
           ),
         ),
+        if (mode == EffortMode.allIn && input.runningCosts == 0) ...[
+          const SizedBox(height: 4),
+          Text(
+            'Charges, taxe foncière, énergie : à saisir dans « Bien, budget '
+            'et négociation ».',
+            style: text.bodySmall,
+          ),
+        ],
       ],
     );
   }

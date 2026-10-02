@@ -44,6 +44,29 @@ void main() {
     expect(computed('Mensualité'), isTrue);
   });
 
+  testWidgets('switching to the all-in effort keeps the effort', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(const SimmoApp());
+    // 35% of 4,000 €.
+    expect(
+      find.text(
+        'Soit ${euros(1400, cents: true)} par mois, assurance comprise',
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Tout compris'));
+    await tester.pump();
+
+    expect(find.text(groupDigits('1400')), findsOneWidget);
+    expect(find.textContaining('à saisir dans'), findsOneWidget);
+  });
+
   testWidgets('charges and an offer show in the budget and negotiation', (
     tester,
   ) async {

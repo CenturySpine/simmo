@@ -83,6 +83,29 @@ void main() {
     expect(decoded.address, _custom.address);
   });
 
+  test('the all-in effort travels with the link', () {
+    final allIn = _custom.copyWith(
+      effortMode: EffortMode.allIn,
+      housingBudget: 1950.5,
+    );
+    final decoded = decodeInput(encodeInput(allIn))!;
+    expect(decoded.effortMode, EffortMode.allIn);
+    expect(decoded.housingBudget, 1950.5);
+  });
+
+  test('links shared before the all-in effort still open', () {
+    // Version 3 code, from before the all-in effort was added.
+    final decoded = decodeInput(
+      'AwKWBLDh2g3AjbcBwOf7CsCpB4C1GICS9AEAAACA4gmgjQbQ2REAAAAA4M_VAbCuFYCt4gSsA'
+      'iMA8L8BAAAAAAAA4PCmDQAKsTYBrbreQITRk1gFNjkyNjYmNjkgUnVlIExvdWlzIEJlY2tlci'
+      'A2OTEwMCBWaWxsZXVyYmFubmU',
+    )!;
+    expect(decoded.price, 287500);
+    expect(decoded.surface, 69.61);
+    expect(decoded.address?.citycode, '69266');
+    expect(decoded.effortMode, EffortMode.debtRatio);
+  });
+
   test('links shared before the address still open', () {
     // Version 2 code, from before the surface and the address were added.
     final decoded = decodeInput(

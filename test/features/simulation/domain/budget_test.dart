@@ -43,6 +43,25 @@ void main() {
     );
   });
 
+  test('an all-in budget gives the price once running costs are paid', () {
+    final input = _base.copyWith(
+      computed: {MainField.price, MainField.loan},
+      effortMode: EffortMode.allIn,
+      housingBudget: 1900,
+      condoFees: 245,
+      propertyTax: 1128,
+      utilities: 60,
+      condoWorks: 9000,
+    );
+    expect(input.runningCosts, 474);
+    final result = simulate(input);
+    expect(result.monthlyPayment, closeTo(1900 - 474, 1));
+    expect(housingBudget(input, result).totalAfter, closeTo(1900, 1));
+
+    // Running costs above the budget leave nothing for the loan.
+    expect(simulate(input.copyWith(housingBudget: 400)).feasible, isFalse);
+  });
+
   test('the bank view ignores the budget', () {
     final plain = simulate(_base);
     final withBudget = simulate(

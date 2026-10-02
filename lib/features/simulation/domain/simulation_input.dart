@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 
 /// The five main parameters: two are computed from the three others.
@@ -14,8 +16,10 @@ bool isSolvable(Set<MainField> computed) =>
     computed.any(_financing.contains) &&
     computed.any(_repayment.contains);
 
-/// How the borrower's monthly effort is expressed.
-enum EffortMode { debtRatio, payment }
+/// How the borrower's monthly effort is expressed: a debt ratio, the loan
+/// payment, or the whole monthly housing cost ([SimulationInput.runningCosts]
+/// on top of the payment).
+enum EffortMode { debtRatio, payment, allIn }
 
 enum PropertyKind { existing, newBuild }
 
@@ -66,6 +70,7 @@ class SimulationInput {
     this.effortMode = EffortMode.debtRatio,
     this.debtRatio = 0.35,
     this.monthlyPayment = 1200,
+    this.housingBudget = 1500,
     this.netMonthlyIncome = 4000,
     this.referenceTaxIncome = 40000,
     this.rate = 0.035,
@@ -125,6 +130,10 @@ class SimulationInput {
   /// Target monthly payment (all loans, insurance included), used when
   /// [effortMode] is [EffortMode.payment].
   final double monthlyPayment;
+
+  /// Target monthly housing cost, all included (payment and
+  /// [runningCosts]), used when [effortMode] is [EffortMode.allIn].
+  final double housingBudget;
   final double netMonthlyIncome;
 
   /// Revenu fiscal de référence N-2 (PTZ eligibility, income tax estimate).
@@ -236,6 +245,16 @@ class SimulationInput {
   /// Living area in m², 0 = not typed.
   final double surface;
 
+  double get monthlyPropertyTax => propertyTax / 12;
+
+  /// Monthly saving for the co-ownership works to come.
+  double get worksSaving => condoWorks / (max(1, condoWorksYears) * 12);
+
+  /// Monthly housing costs besides the loan: charges, property tax,
+  /// utilities, works saving.
+  double get runningCosts =>
+      condoFees + monthlyPropertyTax + utilities + worksSaving;
+
   int get adults => couple ? 2 : 1;
   int get persons => adults + children;
 
@@ -248,6 +267,7 @@ class SimulationInput {
     EffortMode? effortMode,
     double? debtRatio,
     double? monthlyPayment,
+    double? housingBudget,
     double? netMonthlyIncome,
     double? referenceTaxIncome,
     double? rate,
@@ -298,6 +318,7 @@ class SimulationInput {
     effortMode: effortMode ?? this.effortMode,
     debtRatio: debtRatio ?? this.debtRatio,
     monthlyPayment: monthlyPayment ?? this.monthlyPayment,
+    housingBudget: housingBudget ?? this.housingBudget,
     netMonthlyIncome: netMonthlyIncome ?? this.netMonthlyIncome,
     referenceTaxIncome: referenceTaxIncome ?? this.referenceTaxIncome,
     rate: rate ?? this.rate,

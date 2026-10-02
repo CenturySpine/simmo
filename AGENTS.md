@@ -58,13 +58,16 @@ déploie `api/` en fonctions.
 - Seul code serveur : `api/sales.mjs` (fonction Vercel, Node sans dépendance). Elle lit les ventes
   DVF géolocalisées (data.gouv.fr), dont les fichiers refusent la lecture directe depuis le
   navigateur, et renvoie les ventes à moins de 500 m sur les deux dernières années publiées.
+  Elle tourne à Paris (`regions` dans `vercel.json`), près des données.
   L'adresse est cherchée côté navigateur via le géocodage de l'IGN (`geocoding.dart`).
 - Chiffres réglementaires et de marché (notaire, impôt, Action Logement, seuils d'endettement)
   dans `lib/features/simulation/domain/rules.dart`, PTZ dans `ptz.dart`, garantie Crédit Logement
   (relevée sur leur simulateur) dans `guarantee.dart`, taux d'assurance par âge dans `insurance.dart`.
   Les mettre à jour quand la règle change.
 - Cinq paramètres principaux (prix, apport, emprunt, durée, mensualité), tous saisissables : deux
-  sont calculés, choisis parmi les moins récemment saisis (`dashboard_page.dart`).
+  sont calculés, choisis parmi les moins récemment saisis (`dashboard_page.dart`). La mensualité se
+  saisit en endettement, en montant, ou « tout compris » (budget logement mensuel, dont on retire
+  charges, taxe foncière, énergie et épargne travaux pour obtenir la mensualité).
 - Revenus, revenu fiscal, taux, prix saisi, âge, taux de prélèvement saisi, budget du logement,
   prix de négociation, surface et adresse du bien sont gardés sur l'appareil (stockage local du
   navigateur, `saved_inputs.dart`) et rechargés à l'ouverture.

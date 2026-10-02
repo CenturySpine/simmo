@@ -13,8 +13,8 @@ String shareLink(SimulationInput input) => '$siteUrl#${encodeInput(input)}';
 /// Format version, first byte of the code. Fields below are read in this
 /// exact order: never reorder them; a change of layout gets a new version.
 /// Version 2 appends the housing budget and negotiation to version 1, version 3
-/// the surface and the address to version 2.
-const _version = 3;
+/// the surface and the address, version 4 the all-in effort mode.
+const _version = 4;
 
 /// Amounts are stored in cents, rates in units of 1e-7, coordinates in
 /// millionths of a degree.
@@ -102,6 +102,9 @@ String encodeInput(SimulationInput i) {
     out.text(address.citycode);
     out.text(address.label);
   }
+  // The all-in mode also reads as "debt ratio" in the flags above.
+  out.byte(i.effortMode == EffortMode.allIn ? 1 : 0);
+  out.varint((i.housingBudget * _cents).round());
   return base64Url.encode(out.bytes).replaceAll('=', '');
 }
 
@@ -171,6 +174,9 @@ SimulationInput? decodeInput(String fragment) {
         label: r.text(),
       );
     }
+    final v4 = version >= 4;
+    final allIn = v4 && r.byte() == 1;
+    final housingBudget = v4 ? amount() : none.housingBudget;
     if (!r.done) return null;
 
     return SimulationInput(
@@ -179,9 +185,12 @@ SimulationInput? decodeInput(String fragment) {
       downPayment: downPayment,
       loanAmount: loanAmount,
       durationMonths: durationMonths,
-      effortMode: f[0] ? EffortMode.payment : EffortMode.debtRatio,
+      effortMode: allIn
+          ? EffortMode.allIn
+          : (f[0] ? EffortMode.payment : EffortMode.debtRatio),
       debtRatio: debtRatio,
       monthlyPayment: monthlyPayment,
+      housingBudget: housingBudget,
       netMonthlyIncome: netMonthlyIncome,
       referenceTaxIncome: referenceTaxIncome,
       rate: interestRate,

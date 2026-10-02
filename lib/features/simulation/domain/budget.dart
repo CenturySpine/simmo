@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'simulation_input.dart';
 import 'simulation_result.dart';
 import 'simulator.dart';
@@ -51,10 +49,10 @@ HousingBudget housingBudget(SimulationInput input, SimulationResult result) =>
       rent: input.currentRent,
       payment: result.monthlyPayment,
       condoFees: input.condoFees,
-      propertyTax: input.propertyTax / 12,
+      propertyTax: input.monthlyPropertyTax,
       currentUtilities: input.currentUtilities,
       utilities: input.utilities,
-      worksSaving: input.condoWorks / (max(1, input.condoWorksYears) * 12),
+      worksSaving: input.worksSaving,
       income: retainedIncome(input),
       incomeTax: result.incomeTax,
       otherLoans: input.otherLoans,

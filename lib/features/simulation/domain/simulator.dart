@@ -210,10 +210,12 @@ double _withholdingRate(SimulationInput input) {
 
 /// Monthly payment allowed by the effort parameter (all loans, insurance
 /// included).
-double targetMonthly(SimulationInput input) =>
-    input.effortMode == EffortMode.payment
-    ? input.monthlyPayment
-    : input.debtRatio * retainedIncome(input) - input.otherLoans;
+double targetMonthly(SimulationInput input) => switch (input.effortMode) {
+  EffortMode.payment => input.monthlyPayment,
+  EffortMode.allIn => input.housingBudget - input.runningCosts,
+  EffortMode.debtRatio =>
+    input.debtRatio * retainedIncome(input) - input.otherLoans,
+};
 
 double retainedIncome(SimulationInput input) =>
     input.netMonthlyIncome + input.rentalIncome * Rules.rentalIncomeWeight;
