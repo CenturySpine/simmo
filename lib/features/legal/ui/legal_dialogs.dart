@@ -47,7 +47,10 @@ Future<void> showLegalNotice(BuildContext context) => showDialog<void>(
             'sur le simulateur public de Crédit Logement ; taux moyens '
             'd’assurance emprunteur publiés en 2026. Zonage ABC : « Liste des '
             'communes selon le zonage ABC », Ministère de la Transition '
-            'écologique, data.gouv.fr, Licence Ouverte 2.0.',
+            'écologique, data.gouv.fr, Licence Ouverte 2.0. Ventes : '
+            '« Demandes de valeurs foncières géolocalisées », DGFiP et '
+            'Etalab, data.gouv.fr, Licence Ouverte 2.0. Recherche '
+            'd’adresses : Géoplateforme de l’IGN (Base Adresse Nationale).',
       ),
       (
         'Propriété intellectuelle',
@@ -69,19 +72,23 @@ Future<void> showPrivacy(
     sections: const [
       (
         'Aucune collecte',
-        'Simmo ne collecte, ne transmet ni ne vend aucune donnée '
-            'personnelle. Tous les calculs sont faits dans votre '
-            'navigateur : aucune valeur saisie n’est envoyée à un serveur.',
+        'Simmo ne collecte ni ne vend aucune donnée personnelle. Tous les '
+            'calculs sont faits dans votre navigateur. Seule l’adresse du '
+            'bien, si vous la saisissez, en sort : vers le service de '
+            'recherche d’adresses de l’IGN, puis, réduite à sa position, '
+            'vers le serveur de Simmo, qui cherche les ventes voisines. '
+            'Simmo ne la conserve pas.',
       ),
       (
         'Données gardées sur votre appareil',
         'Revenus, revenu fiscal, taux, prix, âge, taux de prélèvement, '
-            'budget du logement (charges, taxe foncière, travaux) et prix '
-            'de négociation saisis sont conservés dans le stockage local de '
-            'votre navigateur, pour les retrouver à votre prochaine visite. '
-            'Ils ne quittent pas votre appareil. Ce stockage sert '
-            'uniquement au service que vous utilisez et ne demande donc '
-            'pas de consentement. Vous pouvez l’effacer à tout moment.',
+            'budget du logement (charges, taxe foncière, travaux), prix de '
+            'négociation, surface et adresse du bien saisis sont conservés '
+            'dans le stockage local de votre navigateur, pour les retrouver '
+            'à votre prochaine visite. Ils ne quittent pas votre appareil, '
+            'hormis l’adresse comme indiqué ci-dessus. Ce stockage sert '
+            'uniquement au service que vous utilisez et ne demande donc pas '
+            'de consentement. Vous pouvez l’effacer à tout moment.',
       ),
       (
         'Liens de partage',
@@ -94,8 +101,10 @@ Future<void> showPrivacy(
       (
         'Cookies et traceurs',
         'Aucun cookie, aucune mesure d’audience, aucune publicité. '
-            'Polices et données sont servies par le site lui-même, sans '
-            'service tiers.',
+            'Polices et données sont servies par le site lui-même ; seule '
+            'la recherche d’adresse passe par un service tiers, celui de '
+            'l’IGN. Les liens d’une vente ouvrent Google Maps ou '
+            'data.gouv.fr, soumis à leurs propres règles.',
       ),
       (
         'Hébergement',

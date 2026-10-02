@@ -25,6 +25,15 @@ void main() {
     expect(stEtienne.zone, PtzZone.b2);
   });
 
+  test('an INSEE code gives the commune, arrondissements their city', () async {
+    final communes = await loadCommunes();
+    expect(communeByCode(communes, '69266')?.name, 'Villeurbanne');
+    expect(communeByCode(communes, '69386')?.name, 'Lyon');
+    expect(communeByCode(communes, '75115')?.zoneName, 'A bis');
+    expect(communeByCode(communes, '13208')?.name, 'Marseille');
+    expect(communeByCode(communes, '00000'), isNull);
+  });
+
   testWidgets('picking a commune sets the zone', (tester) async {
     tester.view.physicalSize = const Size(1400, 3200);
     tester.view.devicePixelRatio = 1;

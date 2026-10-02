@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../../shared/native_share.dart';
 import '../../legal/ui/site_footer.dart';
 import '../../../shared/simmo_logo.dart';
+import '../data/communes.dart';
 import '../data/saved_inputs.dart';
 import '../data/share_link.dart';
 import '../domain/rules.dart';
@@ -65,6 +66,16 @@ class _DashboardPageState extends State<DashboardPage> {
     if (saved.hasPrice) {
       _edited.add(MainField.price);
       _input = _input.copyWith(computed: _pickComputed());
+    }
+    // The zone is not saved: a saved address gives it back.
+    final citycode = _input.address?.citycode;
+    if (citycode != null) {
+      loadCommunes().then((communes) {
+        final zone = communeByCode(communes, citycode)?.zone;
+        if (zone != null && mounted) {
+          setState(() => _input = _input.copyWith(zone: zone));
+        }
+      });
     }
   }
 

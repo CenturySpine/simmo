@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Vercel build command (see vercel.json). Installs the Flutter version pinned in .fvmrc,
-# then analyzes, tests and builds the web app into build/web.
+# then analyzes, tests (app and sales function) and builds the web app into build/web.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -23,4 +23,5 @@ flutter --version
 flutter pub get
 flutter analyze --fatal-infos
 flutter test
+node --test tool/sales_api.test.mjs
 flutter build web --release --no-web-resources-cdn

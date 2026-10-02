@@ -30,3 +30,11 @@ String durationLabel(int months) {
   final m = rest == 0 ? '' : '$rest${_nbsp}mois';
   return [y, m].where((s) => s.isNotEmpty).join(' ');
 }
+
+/// `14/11/2025`.
+String shortDate(DateTime date) =>
+    '${date.day.toString().padLeft(2, '0')}/'
+    '${date.month.toString().padLeft(2, '0')}/${date.year}';
+
+/// `3 842 €/m²`, never split across lines.
+String perSqm(double value) => '${euros(value)}/⁠m²';

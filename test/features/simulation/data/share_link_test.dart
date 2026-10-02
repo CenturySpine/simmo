@@ -54,6 +54,13 @@ final _custom = const SimulationInput().copyWith(
   askingPrice: 299000,
   offerPrice: 279000,
   maxPrice: 285000,
+  surface: 69.61,
+  address: () => const PropertyAddress(
+    label: '69 Rue Louis Becker 69100 Villeurbanne',
+    lat: 45.765293,
+    lon: 4.871044,
+    citycode: '69266',
+  ),
 );
 
 void main() {
@@ -61,7 +68,7 @@ void main() {
     final link = shareLink(_custom);
     expect(link, startsWith('https://simmo.centuryspine.org/#'));
     // A short opaque code, not a list of parameters.
-    expect(link.length, lessThan(180));
+    expect(link.length, lessThan(260));
     expect(link, isNot(contains('&')));
 
     final decoded = decodeInput(Uri.parse(link).fragment)!;
@@ -72,6 +79,22 @@ void main() {
     expect(decoded.condoFees, 245.6);
     expect(decoded.condoWorksYears, 8);
     expect(decoded.maxPrice, 285000);
+    expect(decoded.surface, 69.61);
+    expect(decoded.address, _custom.address);
+  });
+
+  test('links shared before the address still open', () {
+    // Version 2 code, from before the surface and the address were added.
+    final decoded = decodeInput(
+      'AgKWBLDh2g3AjbcBwOf7CsCpB4C1GICS9AEAAACA4gmgjQbQ2REAAAAA4M_VAbCuFYCt4gSsA'
+      'iMA8L8BoPEGAAAAAADg8KYNAAg',
+    )!;
+    expect(decoded.price, 287500);
+    expect(decoded.condoFees, 245.6);
+    expect(decoded.condoWorksYears, 8);
+    expect(decoded.offerPrice, 279000);
+    expect(decoded.surface, 0);
+    expect(decoded.address, isNull);
   });
 
   test('links shared before the housing budget still open', () {

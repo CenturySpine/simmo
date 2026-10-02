@@ -12,12 +12,15 @@ String shareLink(SimulationInput input) => '$siteUrl#${encodeInput(input)}';
 
 /// Format version, first byte of the code. Fields below are read in this
 /// exact order: never reorder them; a change of layout gets a new version.
-/// Version 2 appends the housing budget and negotiation to version 1.
-const _version = 2;
+/// Version 2 appends the housing budget and negotiation to version 1, version 3
+/// the surface and the address to version 2.
+const _version = 3;
 
-/// Amounts are stored in cents, rates in units of 1e-7.
+/// Amounts are stored in cents, rates in units of 1e-7, coordinates in
+/// millionths of a degree.
 const _cents = 100;
 const _rateUnit = 1e7;
+const _microDegrees = 1000000;
 
 String encodeInput(SimulationInput i) {
   final out = _Writer();
@@ -89,6 +92,16 @@ String encodeInput(SimulationInput i) {
     out.varint((amount * _cents).round());
   }
   out.varint(i.condoWorksYears);
+  out.varint((i.surface * _cents).round());
+  final address = i.address;
+  out.byte(address == null ? 0 : 1);
+  if (address != null) {
+    // Shifted to stay positive (French overseas lie west and south).
+    out.varint((address.lat * _microDegrees).round() + 90000000);
+    out.varint((address.lon * _microDegrees).round() + 180000000);
+    out.text(address.citycode);
+    out.text(address.label);
+  }
   return base64Url.encode(out.bytes).replaceAll('=', '');
 }
 
@@ -147,6 +160,17 @@ SimulationInput? decodeInput(String fragment) {
     final offerPrice = v2 ? amount() : none.offerPrice;
     final maxPrice = v2 ? amount() : none.maxPrice;
     final condoWorksYears = v2 ? r.varint() : none.condoWorksYears;
+    final v3 = version >= 3;
+    final surface = v3 ? amount() : none.surface;
+    PropertyAddress? address;
+    if (v3 && r.byte() == 1) {
+      address = PropertyAddress(
+        lat: (r.varint() - 90000000) / _microDegrees,
+        lon: (r.varint() - 180000000) / _microDegrees,
+        citycode: r.text(),
+        label: r.text(),
+      );
+    }
     if (!r.done) return null;
 
     return SimulationInput(
@@ -201,6 +225,8 @@ SimulationInput? decodeInput(String fragment) {
       askingPrice: askingPrice,
       offerPrice: offerPrice,
       maxPrice: maxPrice,
+      address: address,
+      surface: surface,
     );
   } on Object {
     // Not a code from this app (bad base64, truncated, unknown field).
@@ -234,6 +260,13 @@ class _Writer {
     }
     byte(rest);
   }
+
+  /// UTF-8, after its length.
+  void text(String value) {
+    final encoded = utf8.encode(value);
+    varint(encoded.length);
+    _bytes.addAll(encoded);
+  }
 }
 
 class _Reader {
@@ -260,5 +293,12 @@ class _Reader {
       if (b < 128) return value;
       scale *= 128;
     }
+  }
+
+  String text() {
+    final length = varint();
+    final value = utf8.decode(_bytes.sublist(_position, _position + length));
+    _position += length;
+    return value;
   }
 }

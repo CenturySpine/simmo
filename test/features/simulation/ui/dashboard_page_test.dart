@@ -59,7 +59,7 @@ void main() {
     expect(find.text('Budget mensuel'), findsOneWidget);
     expect(find.text('Votre offre'), findsNothing);
 
-    await tester.tap(find.text('Budget et négociation'));
+    await tester.tap(find.text('Bien, budget et négociation'));
     await tester.pumpAndSettle();
     await tester.enterText(field('Charges de copropriété (par mois)'), '245');
     await tester.enterText(field('Votre offre'), '279000');

@@ -5,7 +5,8 @@ Instructions pour tout assistant de code dans ce dépôt. `CLAUDE.md` l'importe.
 ## Projet
 
 Simmo : PWA Flutter (web uniquement) de simulation de prêt immobilier, au plus proche de ce que
-font les courtiers. Hébergée sur Vercel. Firebase disponible si un backend devient nécessaire.
+font les courtiers. Hébergée sur Vercel (site et fonction des ventes DVF). Firebase disponible si
+un autre backend devient nécessaire.
 
 ## Règles
 
@@ -38,6 +39,7 @@ fvm flutter run -d chrome
 fvm dart format lib test tool
 fvm flutter analyze --fatal-infos
 fvm flutter test
+node --test tool/sales_api.test.mjs           # tests de la fonction api/sales.mjs
 fvm flutter build web --release --no-web-resources-cdn
 fvm flutter test tool/generate_icons.dart     # régénère icônes PWA et favicon depuis le logo
 npx vercel <cmd>                             # CLI Vercel
@@ -45,26 +47,31 @@ npx firebase <cmd>                           # CLI Firebase
 gh <cmd>                                     # CLI GitHub (global)
 ```
 
-À chaque push, Vercel exécute `tool/vercel_build.sh` (Flutter, analyze, test, build web).
+À chaque push, Vercel exécute `tool/vercel_build.sh` (Flutter, analyze, tests, build web) et
+déploie `api/` en fonctions.
 
 ## Code
 
 - Feature-first : `lib/core/` (thème, config), `lib/features/<feature>/`, `lib/shared/`
   (widgets communs), `test/` en miroir.
 - Calculs financiers en Dart pur, testés unitairement, tout côté web app (aucun serveur).
+- Seul code serveur : `api/sales.mjs` (fonction Vercel, Node sans dépendance). Elle lit les ventes
+  DVF géolocalisées (data.gouv.fr), dont les fichiers refusent la lecture directe depuis le
+  navigateur, et renvoie les ventes à moins de 500 m sur les deux dernières années publiées.
+  L'adresse est cherchée côté navigateur via le géocodage de l'IGN (`geocoding.dart`).
 - Chiffres réglementaires et de marché (notaire, impôt, Action Logement, seuils d'endettement)
   dans `lib/features/simulation/domain/rules.dart`, PTZ dans `ptz.dart`, garantie Crédit Logement
   (relevée sur leur simulateur) dans `guarantee.dart`, taux d'assurance par âge dans `insurance.dart`.
   Les mettre à jour quand la règle change.
 - Cinq paramètres principaux (prix, apport, emprunt, durée, mensualité), tous saisissables : deux
   sont calculés, choisis parmi les moins récemment saisis (`dashboard_page.dart`).
-- Revenus, revenu fiscal, taux, prix saisi, âge, taux de prélèvement saisi, budget du logement et
-  prix de négociation sont gardés sur l'appareil (stockage local du navigateur, `saved_inputs.dart`)
-  et rechargés à l'ouverture.
+- Revenus, revenu fiscal, taux, prix saisi, âge, taux de prélèvement saisi, budget du logement,
+  prix de négociation, surface et adresse du bien sont gardés sur l'appareil (stockage local du
+  navigateur, `saved_inputs.dart`) et rechargés à l'ouverture.
 - Budget mensuel (vue acheteur : charges, taxe foncière, énergie, épargne travaux de copro) et
   négociation (offre, plafond, prix affiché) dans `budget.dart`. Ils ne touchent pas aux calculs
   bancaires, sauf les appels de fonds de copro à l'achat, financés avec le projet.
-- Zone du bien : recherche par commune dans `assets/data/zonage_abc.csv`, fichier officiel du
+- Zone du bien : remplie par l'adresse du bien, ou recherche par commune dans `assets/data/zonage_abc.csv`, fichier officiel du
   zonage ABC (data.gouv.fr, « Liste des communes selon le zonage ABC ») gardé tel que publié. À
   chaque nouvel arrêté, remplacer le fichier par la nouvelle version.
 - Partage : « Partager » copie `https://simmo.centuryspine.org/#<code>`, où le code compacte tous

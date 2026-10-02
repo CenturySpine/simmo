@@ -24,6 +24,35 @@ enum DwellingType { apartment, house }
 /// PTZ zoning (A includes A bis).
 enum PtzZone { a, b1, b2, c }
 
+/// A geocoded address: where the property is.
+@immutable
+class PropertyAddress {
+  const PropertyAddress({
+    required this.label,
+    required this.lat,
+    required this.lon,
+    required this.citycode,
+  });
+
+  final String label;
+  final double lat;
+  final double lon;
+
+  /// INSEE code; the arrondissement in Paris, Lyon and Marseille.
+  final String citycode;
+
+  @override
+  bool operator ==(Object other) =>
+      other is PropertyAddress &&
+      other.label == label &&
+      other.lat == lat &&
+      other.lon == lon &&
+      other.citycode == citycode;
+
+  @override
+  int get hashCode => Object.hash(label, lat, lon, citycode);
+}
+
 /// Everything the user can set. Rates are fractions (0.035 = 3.5%), amounts
 /// in euros, durations in months.
 @immutable
@@ -76,6 +105,8 @@ class SimulationInput {
     this.askingPrice = 0,
     this.offerPrice = 0,
     this.maxPrice = 0,
+    this.address,
+    this.surface = 0,
   });
 
   // --- Main parameters -----------------------------------------------------
@@ -198,6 +229,13 @@ class SimulationInput {
   final double offerPrice;
   final double maxPrice;
 
+  // --- Market ----------------------------------------------------------------
+  /// Where the property is: nearby sales.
+  final PropertyAddress? address;
+
+  /// Living area in m², 0 = not typed.
+  final double surface;
+
   int get adults => couple ? 2 : 1;
   int get persons => adults + children;
 
@@ -249,6 +287,8 @@ class SimulationInput {
     double? askingPrice,
     double? offerPrice,
     double? maxPrice,
+    ValueGetter<PropertyAddress?>? address,
+    double? surface,
   }) => SimulationInput(
     computed: computed ?? this.computed,
     price: price ?? this.price,
@@ -299,5 +339,7 @@ class SimulationInput {
     askingPrice: askingPrice ?? this.askingPrice,
     offerPrice: offerPrice ?? this.offerPrice,
     maxPrice: maxPrice ?? this.maxPrice,
+    address: address != null ? address() : this.address,
+    surface: surface ?? this.surface,
   );
 }

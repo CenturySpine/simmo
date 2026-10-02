@@ -4,8 +4,10 @@ import '../domain/simulation_input.dart';
 
 /// A commune of the official ABC zoning list.
 class Commune {
-  Commune(this.name, this.department, this.zoneLabel);
+  Commune(this.code, this.name, this.department, this.zoneLabel);
 
+  /// INSEE code.
+  final String code;
   final String name;
   final String department;
 
@@ -32,12 +34,29 @@ const communesAsset = 'assets/data/zonage_abc.csv';
 /// Parses the official CSV: `CODGEO;DEP;LIBGEO;zone`, one header line.
 List<Commune> parseCommunes(String csv) => [
   for (final line in csv.split('\n').skip(1))
-    if (line.trim().split(';') case [_, final dep, final name, final zone])
-      Commune(name, dep, zone),
+    if (line.trim().split(';') case [
+      final code,
+      final dep,
+      final name,
+      final zone,
+    ])
+      Commune(code, name, dep, zone),
 ];
 
 Future<List<Commune>> loadCommunes([AssetBundle? bundle]) async =>
     parseCommunes(await (bundle ?? rootBundle).loadString(communesAsset));
+
+/// The commune of INSEE [code]; an arrondissement of Paris, Lyon or
+/// Marseille gives its city, the only one listed.
+Commune? communeByCode(List<Commune> communes, String code) {
+  final city = switch (code) {
+    _ when code.startsWith('751') => '75056',
+    _ when code.startsWith('6938') => '69123',
+    _ when code.startsWith('132') => '13055',
+    _ => code,
+  };
+  return communes.where((commune) => commune.code == city).firstOrNull;
+}
 
 /// Communes matching [query], ignoring case, accents and punctuation
 /// ("st etienne" finds Saint-Étienne): exact names first, then names

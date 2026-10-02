@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/number_field.dart';
 import '../domain/simulation_input.dart';
 import '../domain/simulation_result.dart';
+import 'address_field.dart';
 import 'commune_field.dart';
 
 /// Everything banks and brokers look at, preset to usual values and folded
@@ -222,8 +223,8 @@ class AdvancedParams extends StatelessWidget {
   }
 }
 
-/// What the purchase costs day to day and the prices at stake in the
-/// negotiation; all optional, folded away by default.
+/// Where the property is, what it costs day to day and the prices at stake in
+/// the negotiation; all optional, folded away by default.
 class BudgetParams extends StatelessWidget {
   const BudgetParams({super.key, required this.input, required this.onChanged});
 
@@ -239,15 +240,32 @@ class BudgetParams extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: ExpansionTile(
         title: Text(
-          'Budget et négociation',
+          'Bien, budget et négociation',
           style: Theme.of(context).textTheme.titleMedium,
         ),
         subtitle: Text(
-          'Charges, taxe foncière, travaux de copro, offre',
+          'Adresse, charges, taxe foncière, travaux de copro, offre',
           style: Theme.of(context).textTheme.bodySmall,
         ),
         expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const _Group('Le bien'),
+          AddressField(
+            address: input.address,
+            onChanged: (address, zone) =>
+                _set((i) => i.copyWith(address: () => address, zone: zone)),
+          ),
+          _Field(
+            'Surface habitable',
+            NumberField(
+              value: input.surface,
+              decimals: 2,
+              suffix: 'm²',
+              dense: true,
+              onChanged: (v) => _set((i) => i.copyWith(surface: v)),
+            ),
+          ),
+
           const _Group('Après l’achat'),
           _Amount(
             'Charges de copropriété (par mois)',

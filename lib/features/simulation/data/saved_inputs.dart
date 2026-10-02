@@ -1,11 +1,13 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../domain/simulation_input.dart';
 
 /// Income, reference tax income, rate, typed price, borrower age, typed
-/// withholding rate, housing budget and negotiation prices, kept on the
-/// device (browser local storage) and restored at the next visit. Stored as
-/// text: whole numbers lose their double type in JSON on the web.
+/// withholding rate, housing budget, negotiation prices, surface and address,
+/// kept on the device (browser local storage) and restored at the next visit.
+/// Stored as text: whole numbers lose their double type in JSON on the web.
 class SavedInputs {
   SavedInputs(this._prefs);
 
@@ -17,8 +19,9 @@ class SavedInputs {
   static const _rate = 'rate';
   static const _age = 'borrowerAge';
   static const _withholding = 'withholdingRate';
+  static const _address = 'address';
 
-  /// Housing budget and negotiation: how to read and set each value.
+  /// Housing budget, negotiation and surface: how to read and set each value.
   static final _budget =
       <
         String,
@@ -58,6 +61,7 @@ class SavedInputs {
           (i, v) => i.copyWith(offerPrice: v),
         ),
         'maxPrice': ((i) => i.maxPrice, (i, v) => i.copyWith(maxPrice: v)),
+        'surface': ((i) => i.surface, (i, v) => i.copyWith(surface: v)),
       };
 
   bool get hasPrice => _get(_price) != null;
@@ -69,7 +73,9 @@ class SavedInputs {
       final value = _get(key);
       if (value != null) restored = set(restored, value);
     }
+    final address = _readAddress();
     return restored.copyWith(
+      address: address == null ? null : () => address,
       price: _get(_price),
       netMonthlyIncome: _get(_income),
       referenceTaxIncome: _get(_taxIncome),
@@ -98,6 +104,20 @@ class SavedInputs {
     for (final MapEntry(:key, value: (get, _)) in _budget.entries) {
       keep(key, get(before), get(after));
     }
+    final address = after.address;
+    if (address != before.address) {
+      address == null
+          ? _prefs.remove(_address)
+          : _prefs.setString(
+              _address,
+              jsonEncode({
+                'label': address.label,
+                'lat': address.lat,
+                'lon': address.lon,
+                'citycode': address.citycode,
+              }),
+            );
+    }
     final withholding = after.withholdingRate;
     if (withholding != before.withholdingRate) {
       // Back to the estimate: forget the typed rate.
@@ -116,9 +136,26 @@ class SavedInputs {
       _rate,
       _age,
       _withholding,
+      _address,
       ..._budget.keys,
     ]) {
       _prefs.remove(key);
+    }
+  }
+
+  PropertyAddress? _readAddress() {
+    final text = _prefs.getString(_address);
+    if (text == null) return null;
+    try {
+      final json = jsonDecode(text) as Map<String, dynamic>;
+      return PropertyAddress(
+        label: json['label'] as String,
+        lat: (json['lat'] as num).toDouble(),
+        lon: (json['lon'] as num).toDouble(),
+        citycode: json['citycode'] as String,
+      );
+    } on Object {
+      return null;
     }
   }
 

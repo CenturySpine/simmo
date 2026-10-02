@@ -71,3 +71,74 @@ class ValueRow extends StatelessWidget {
     );
   }
 }
+
+/// A label (and an optional second line) with right-aligned value columns.
+class ColumnsRow extends StatelessWidget {
+  const ColumnsRow(
+    this.label,
+    this.values, {
+    super.key,
+    this.note,
+    this.strong = false,
+    this.trailing,
+  }) : header = false;
+
+  const ColumnsRow.header(this.values, {super.key, this.trailing})
+    : label = '',
+      note = null,
+      strong = false,
+      header = true;
+
+  final String label;
+  final List<String> values;
+
+  /// Second line under the label.
+  final String? note;
+  final bool strong;
+  final bool header;
+
+  /// After the values (an action); same width on every row of a table.
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    final labelStyle = strong
+        ? text.titleSmall
+        : text.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          );
+    final valueStyle = header
+        ? text.labelMedium
+        : strong
+        ? text.titleSmall
+        : text.bodyMedium?.copyWith(fontWeight: FontWeight.w600);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: labelStyle),
+                if (note != null) Text(note!, style: text.bodySmall),
+              ],
+            ),
+          ),
+          for (final value in values)
+            SizedBox(
+              width: 84,
+              // One line: a wider value shrinks rather than wraps.
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text(value, style: valueStyle),
+              ),
+            ),
+          ?trailing,
+        ],
+      ),
+    );
+  }
+}
