@@ -14,8 +14,8 @@ import 'debt_ratio_color.dart';
 const minDebtRatio = 0.05;
 const maxDebtRatio = 0.50;
 
-/// The five main parameters, all editable; the two computed ones show the
-/// result and adapt to the others.
+/// The five main parameters, all editable, and the loan rate; the two
+/// computed ones show the result and adapt to the others.
 class MainParams extends StatelessWidget {
   const MainParams({
     super.key,
@@ -58,106 +58,76 @@ class MainParams extends StatelessWidget {
       ),
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SectionCard(
-          title: 'Projet',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Text(
-                  'Les deux valeurs « calculées » s’ajustent à vos saisies.',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-              money(
-                MainField.price,
-                'Prix du bien',
-                input.price,
-                result.price,
-                (v) => input.copyWith(price: v),
-              ),
-              money(
-                MainField.downPayment,
-                'Apport',
-                input.downPayment,
-                result.downPayment,
-                (v) => input.copyWith(downPayment: v),
-                note:
-                    '${(result.downPaymentShare * 100).round()} % du coût total',
-              ),
-              money(
-                MainField.loan,
-                'Montant emprunté',
-                input.loanAmount,
-                result.borrowed,
-                (v) => input.copyWith(loanAmount: v),
-              ),
-              _ParamBlock(
-                label: 'Durée',
-                computed: _computed(MainField.duration),
-                editor: _DurationSlider(
-                  months: _computed(MainField.duration)
-                      ? result.durationMonths
-                      : input.durationMonths,
-                  onChanged: (months) => onEdit(
-                    MainField.duration,
-                    input.copyWith(durationMonths: months),
-                  ),
-                ),
-              ),
-              _ParamBlock(
-                label: 'Mensualité',
-                computed: _computed(MainField.payment),
-                editor: _EffortEditor(
-                  input: input,
-                  result: _computed(MainField.payment) ? result : null,
-                  onEdit: (i) => onEdit(MainField.payment, i),
-                  onEffortMode: onEffortMode,
-                ),
-              ),
-            ],
+    return SectionCard(
+      title: 'Projet',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Text(
+              'Les deux valeurs « calculées » s’ajustent à vos saisies.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        SectionCard(
-          title: 'Revenus et taux',
-          child: Column(
-            children: [
-              _InlineField(
-                'Revenus nets mensuels',
-                NumberField(
-                  value: input.netMonthlyIncome,
-                  decimals: 2,
-                  onChanged: (v) =>
-                      onChanged(input.copyWith(netMonthlyIncome: v)),
-                ),
-              ),
-              _InlineField(
-                'Revenu fiscal de référence N-2',
-                NumberField(
-                  value: input.referenceTaxIncome,
-                  onChanged: (v) =>
-                      onChanged(input.copyWith(referenceTaxIncome: v)),
-                ),
-              ),
-              _InlineField(
-                'Taux du prêt',
-                NumberField(
-                  value: input.rate,
-                  scale: 100,
-                  decimals: 2,
-                  suffix: '%',
-                  onChanged: (v) => onChanged(input.copyWith(rate: v)),
-                ),
-              ),
-            ],
+          money(
+            MainField.price,
+            'Prix du bien',
+            input.price,
+            result.price,
+            (v) => input.copyWith(price: v),
           ),
-        ),
-      ],
+          money(
+            MainField.downPayment,
+            'Apport',
+            input.downPayment,
+            result.downPayment,
+            (v) => input.copyWith(downPayment: v),
+            note: '${(result.downPaymentShare * 100).round()} % du coût total',
+          ),
+          money(
+            MainField.loan,
+            'Montant emprunté',
+            input.loanAmount,
+            result.borrowed,
+            (v) => input.copyWith(loanAmount: v),
+          ),
+          _ParamBlock(
+            label: 'Durée',
+            computed: _computed(MainField.duration),
+            editor: _DurationSlider(
+              months: _computed(MainField.duration)
+                  ? result.durationMonths
+                  : input.durationMonths,
+              onChanged: (months) => onEdit(
+                MainField.duration,
+                input.copyWith(durationMonths: months),
+              ),
+            ),
+          ),
+          _ParamBlock(
+            label: 'Taux du prêt',
+            computed: false,
+            editor: NumberField(
+              value: input.rate,
+              scale: 100,
+              decimals: 2,
+              suffix: '%',
+              onChanged: (v) => onChanged(input.copyWith(rate: v)),
+            ),
+          ),
+          _ParamBlock(
+            label: 'Mensualité',
+            computed: _computed(MainField.payment),
+            editor: _EffortEditor(
+              input: input,
+              result: _computed(MainField.payment) ? result : null,
+              onEdit: (i) => onEdit(MainField.payment, i),
+              onEffortMode: onEffortMode,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -379,36 +349,12 @@ class _EffortEditor extends StatelessWidget {
         if (mode == EffortMode.allIn && input.runningCosts == 0) ...[
           const SizedBox(height: 4),
           Text(
-            'Charges, taxe foncière, énergie : à saisir dans « Bien, budget '
-            'et négociation ».',
+            'Charges, taxe foncière, énergie : à saisir dans « Budget et '
+            'négociation ».',
             style: text.bodySmall,
           ),
         ],
       ],
-    );
-  }
-}
-
-/// Label on the left, compact field on the right.
-class _InlineField extends StatelessWidget {
-  const _InlineField(this.label, this.field);
-
-  final String label;
-  final Widget field;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
-          ),
-          const SizedBox(width: 12),
-          SizedBox(width: 170, child: field),
-        ],
-      ),
     );
   }
 }

@@ -81,14 +81,14 @@ Future<void> showPrivacy(
       ),
       (
         'Données gardées sur votre appareil',
-        'Revenus, revenu fiscal, taux, prix, âge, taux de prélèvement, '
-            'budget du logement (charges, taxe foncière, travaux), prix de '
-            'négociation, surface et adresse du bien saisis sont conservés '
-            'dans le stockage local de votre navigateur, pour les retrouver '
-            'à votre prochaine visite. Ils ne quittent pas votre appareil, '
-            'hormis l’adresse comme indiqué ci-dessus. Ce stockage sert '
-            'uniquement au service que vous utilisez et ne demande donc pas '
-            'de consentement. Vous pouvez l’effacer à tout moment.',
+        'Vos projets, avec toutes les valeurs de chaque simulation '
+            '(revenus, foyer, prix, prêt, budget, négociation, surface et '
+            'adresse du bien), sont conservés dans le stockage local de '
+            'votre navigateur, pour les retrouver à votre prochaine visite. '
+            'Ils ne quittent pas votre appareil, hormis l’adresse comme '
+            'indiqué ci-dessus. Ce stockage sert uniquement au service que '
+            'vous utilisez et ne demande donc pas de consentement. Vous '
+            'pouvez l’effacer à tout moment.',
       ),
       (
         'Liens de partage',
@@ -96,7 +96,8 @@ Future<void> showPrivacy(
             'placées après le « # » de l’adresse, partie que le '
             'navigateur n’envoie pas au serveur. Toute personne qui reçoit '
             'le lien voit ces valeurs : ne le partagez qu’avec des '
-            'personnes de confiance.',
+            'personnes de confiance. Une simulation reçue par lien n’est '
+            'pas conservée sur votre appareil.',
       ),
       (
         'Cookies et traceurs',

@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/theme/app_theme.dart';
-import 'features/simulation/data/saved_inputs.dart';
+import 'features/simulation/data/saved_projects.dart';
 import 'features/simulation/ui/dashboard_page.dart';
 
 class SimmoApp extends StatelessWidget {
   const SimmoApp({super.key, this.saved, this.sharedFragment = ''});
 
-  final SavedInputs? saved;
+  final SavedProjects? saved;
 
   /// Fragment of the opening URL (a shared simulation).
   final String sharedFragment;

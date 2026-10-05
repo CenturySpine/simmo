@@ -1,10 +1,165 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/format.dart';
 import '../../../shared/number_field.dart';
 import '../domain/simulation_input.dart';
 import '../domain/simulation_result.dart';
-import 'address_field.dart';
 import 'commune_field.dart';
+
+/// The buyer's situation, the same in every project: income, household and
+/// current housing. Open on a first visit, folded afterwards.
+class BuyerParams extends StatelessWidget {
+  const BuyerParams({
+    super.key,
+    required this.input,
+    required this.result,
+    required this.onChanged,
+    required this.wide,
+    required this.initiallyExpanded,
+    this.shared = false,
+  });
+
+  final SimulationInput input;
+  final SimulationResult result;
+  final ValueChanged<SimulationInput> onChanged;
+
+  /// Income and household side by side.
+  final bool wide;
+  final bool initiallyExpanded;
+
+  /// The situation of a shared simulation, not the user's.
+  final bool shared;
+
+  void _set(SimulationInput Function(SimulationInput) change) =>
+      onChanged(change(input));
+
+  String get _summary {
+    final children = input.children;
+    final household = [
+      '${euros(input.netMonthlyIncome)} nets par mois',
+      if (input.couple) 'en couple',
+      if (children > 0) '$children enfant${children > 1 ? 's' : ''}',
+    ].join(', ');
+    return '$household. '
+        '${shared ? 'Celle du lien partagé.' : 'Commune à tous vos projets.'}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final income = [
+      const _Group('Revenus'),
+      _Field(
+        'Revenus nets mensuels',
+        NumberField(
+          value: input.netMonthlyIncome,
+          decimals: 2,
+          dense: true,
+          onChanged: (v) => _set((i) => i.copyWith(netMonthlyIncome: v)),
+        ),
+      ),
+      _Amount(
+        'Revenu fiscal de référence N-2',
+        input.referenceTaxIncome,
+        (v) => _set((i) => i.copyWith(referenceTaxIncome: v)),
+      ),
+      _Auto(
+        'Taux de prélèvement à la source',
+        typed: input.withholdingRate,
+        computed: result.withholdingRate,
+        scale: 100,
+        decimals: 1,
+        suffix: '%',
+        onChanged: (v) => _set((i) => i.copyWith(withholdingRate: () => v)),
+      ),
+      _Amount(
+        'Revenus locatifs (retenus à 70 %)',
+        input.rentalIncome,
+        (v) => _set((i) => i.copyWith(rentalIncome: v)),
+      ),
+      _Amount(
+        'Autres crédits (par mois)',
+        input.otherLoans,
+        (v) => _set((i) => i.copyWith(otherLoans: v)),
+      ),
+    ];
+    final household = [
+      const _Group('Foyer'),
+      _Toggle(
+        'En couple',
+        input.couple,
+        (v) => _set((i) => i.copyWith(couple: v)),
+      ),
+      _Field(
+        'Enfants à charge',
+        NumberField(
+          value: input.children.toDouble(),
+          suffix: '',
+          dense: true,
+          onChanged: (v) => _set((i) => i.copyWith(children: v.round())),
+        ),
+      ),
+      _Field(
+        'Âge de l’emprunteur',
+        NumberField(
+          value: input.borrowerAge.toDouble(),
+          suffix: 'ans',
+          dense: true,
+          onChanged: (v) => _set((i) => i.copyWith(borrowerAge: v.round())),
+        ),
+      ),
+      _Toggle(
+        'Primo-accédant',
+        input.firstTimeBuyer,
+        (v) => _set((i) => i.copyWith(firstTimeBuyer: v)),
+      ),
+      const _Group('Logement actuel'),
+      _Amount(
+        'Loyer (par mois)',
+        input.currentRent,
+        (v) => _set((i) => i.copyWith(currentRent: v)),
+      ),
+      _Amount(
+        'Charges, énergie et assurance (par mois)',
+        input.currentUtilities,
+        (v) => _set((i) => i.copyWith(currentUtilities: v)),
+      ),
+    ];
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        initiallyExpanded: initiallyExpanded,
+        title: Text(
+          'Votre situation',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        subtitle: Text(_summary, style: Theme.of(context).textTheme.bodySmall),
+        expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+        children: wide
+            ? [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: income,
+                      ),
+                    ),
+                    const SizedBox(width: 32),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: household,
+                      ),
+                    ),
+                  ],
+                ),
+              ]
+            : [...income, ...household],
+      ),
+    );
+  }
+}
 
 /// Everything banks and brokers look at, preset to usual values and folded
 /// away by default.
@@ -73,11 +228,6 @@ class AdvancedParams extends StatelessWidget {
             input.zone,
             (v) => _set((i) => i.copyWith(zone: v)),
           ),
-          _Toggle(
-            'Primo-accédant',
-            input.firstTimeBuyer,
-            (v) => _set((i) => i.copyWith(firstTimeBuyer: v)),
-          ),
           if (existing && !input.firstTimeBuyer)
             _Toggle(
               'Droits de mutation à 5 %',
@@ -130,15 +280,6 @@ class AdvancedParams extends StatelessWidget {
           ),
 
           const _Group('Assurance emprunteur'),
-          _Field(
-            'Âge de l’emprunteur',
-            NumberField(
-              value: input.borrowerAge.toDouble(),
-              suffix: 'ans',
-              dense: true,
-              onChanged: (v) => _set((i) => i.copyWith(borrowerAge: v.round())),
-            ),
-          ),
           _Choice<bool>(
             'Contrat',
             const {true: 'Banque (groupe)', false: 'Délégation'},
@@ -159,46 +300,6 @@ class AdvancedParams extends StatelessWidget {
             input.insuranceCoverage,
             (v) => _set((i) => i.copyWith(insuranceCoverage: v)),
             decimals: 0,
-          ),
-
-          const _Group('Foyer'),
-          _Toggle(
-            'En couple',
-            input.couple,
-            (v) => _set((i) => i.copyWith(couple: v)),
-          ),
-          _Field(
-            'Enfants à charge',
-            NumberField(
-              value: input.children.toDouble(),
-              suffix: '',
-              dense: true,
-              onChanged: (v) => _set((i) => i.copyWith(children: v.round())),
-            ),
-          ),
-          _Amount(
-            'Autres crédits (par mois)',
-            input.otherLoans,
-            (v) => _set((i) => i.copyWith(otherLoans: v)),
-          ),
-          _Amount(
-            'Loyer actuel',
-            input.currentRent,
-            (v) => _set((i) => i.copyWith(currentRent: v)),
-          ),
-          _Amount(
-            'Revenus locatifs (retenus à 70 %)',
-            input.rentalIncome,
-            (v) => _set((i) => i.copyWith(rentalIncome: v)),
-          ),
-          _Auto(
-            'Taux de prélèvement à la source',
-            typed: input.withholdingRate,
-            computed: result.withholdingRate,
-            scale: 100,
-            decimals: 1,
-            suffix: '%',
-            onChanged: (v) => _set((i) => i.copyWith(withholdingRate: () => v)),
           ),
 
           const _Group('Aides'),
@@ -223,8 +324,8 @@ class AdvancedParams extends StatelessWidget {
   }
 }
 
-/// Where the property is, what it costs day to day and the prices at stake in
-/// the negotiation; all optional, folded away by default.
+/// What the property costs day to day and the prices at stake in the
+/// negotiation; all optional, folded away by default.
 class BudgetParams extends StatelessWidget {
   const BudgetParams({super.key, required this.input, required this.onChanged});
 
@@ -240,32 +341,15 @@ class BudgetParams extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: ExpansionTile(
         title: Text(
-          'Bien, budget et négociation',
+          'Budget et négociation',
           style: Theme.of(context).textTheme.titleMedium,
         ),
         subtitle: Text(
-          'Adresse, charges, taxe foncière, travaux de copro, offre',
+          'Charges, taxe foncière, travaux de copro, offre',
           style: Theme.of(context).textTheme.bodySmall,
         ),
         expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _Group('Le bien'),
-          AddressField(
-            address: input.address,
-            onChanged: (address, zone) =>
-                _set((i) => i.copyWith(address: () => address, zone: zone)),
-          ),
-          _Field(
-            'Surface habitable',
-            NumberField(
-              value: input.surface,
-              decimals: 2,
-              suffix: 'm²',
-              dense: true,
-              onChanged: (v) => _set((i) => i.copyWith(surface: v)),
-            ),
-          ),
-
           const _Group('Après l’achat'),
           _Amount(
             'Charges de copropriété (par mois)',
@@ -303,13 +387,6 @@ class BudgetParams extends StatelessWidget {
               onChanged: (v) =>
                   _set((i) => i.copyWith(condoWorksYears: v.round())),
             ),
-          ),
-
-          const _Group('Aujourd’hui, en plus du loyer'),
-          _Amount(
-            'Charges, énergie et assurance (par mois)',
-            input.currentUtilities,
-            (v) => _set((i) => i.copyWith(currentUtilities: v)),
           ),
 
           const _Group('Négociation'),

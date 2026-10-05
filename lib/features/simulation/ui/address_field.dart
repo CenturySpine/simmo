@@ -39,10 +39,7 @@ class _AddressFieldState extends State<AddressField> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Adresse du bien',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          Text('Adresse', style: Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height: 6),
           Autocomplete<PropertyAddress>(
             // A new key resets the text when the address changes elsewhere

@@ -16,6 +16,32 @@ bool isSolvable(Set<MainField> computed) =>
     computed.any(_financing.contains) &&
     computed.any(_repayment.contains);
 
+/// Which untouched parameters adapt first: the purchase capacity.
+const _computePreference = [
+  MainField.price,
+  MainField.loan,
+  MainField.payment,
+  MainField.duration,
+  MainField.downPayment,
+];
+
+/// The two parameters to compute, given those the user typed (newest last):
+/// untouched ones first, then the least recently typed, so the latest entries
+/// always stay as typed.
+Set<MainField> pickComputed(List<MainField> typed) {
+  final order = [
+    ..._computePreference.where((f) => !typed.contains(f)),
+    ...typed,
+  ];
+  for (var j = 1; j < order.length; j++) {
+    for (var i = 0; i < j; i++) {
+      final pair = {order[i], order[j]};
+      if (isSolvable(pair)) return pair;
+    }
+  }
+  return const {MainField.price, MainField.loan};
+}
+
 /// How the borrower's monthly effort is expressed: a debt ratio, the loan
 /// payment, or the whole monthly housing cost ([SimulationInput.runningCosts]
 /// on top of the payment).
@@ -257,6 +283,22 @@ class SimulationInput {
 
   int get adults => couple ? 2 : 1;
   int get persons => adults + children;
+
+  /// This input with the buyer of [other]: income, age, household and
+  /// current housing, the same in every project.
+  SimulationInput withBuyerOf(SimulationInput other) => copyWith(
+    netMonthlyIncome: other.netMonthlyIncome,
+    referenceTaxIncome: other.referenceTaxIncome,
+    borrowerAge: other.borrowerAge,
+    firstTimeBuyer: other.firstTimeBuyer,
+    couple: other.couple,
+    children: other.children,
+    otherLoans: other.otherLoans,
+    currentRent: other.currentRent,
+    currentUtilities: other.currentUtilities,
+    rentalIncome: other.rentalIncome,
+    withholdingRate: () => other.withholdingRate,
+  );
 
   SimulationInput copyWith({
     Set<MainField>? computed,

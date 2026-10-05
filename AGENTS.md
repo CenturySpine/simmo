@@ -65,12 +65,18 @@ déploie `api/` en fonctions.
   (relevée sur leur simulateur) dans `guarantee.dart`, taux d'assurance par âge dans `insurance.dart`.
   Les mettre à jour quand la règle change.
 - Cinq paramètres principaux (prix, apport, emprunt, durée, mensualité), tous saisissables : deux
-  sont calculés, choisis parmi les moins récemment saisis (`dashboard_page.dart`). La mensualité se
+  sont calculés, choisis parmi les moins récemment saisis (`pickComputed`). La mensualité se
   saisit en endettement, en montant, ou « tout compris » (budget logement mensuel, dont on retire
   charges, taxe foncière, énergie et épargne travaux pour obtenir la mensualité).
-- Revenus, revenu fiscal, taux, prix saisi, âge, taux de prélèvement saisi, budget du logement,
-  prix de négociation, surface et adresse du bien sont gardés sur l'appareil (stockage local du
-  navigateur, `saved_inputs.dart`) et rechargés à l'ouverture.
+- Projets : un onglet par bien étudié (`dashboard_page.dart`), nommé par son adresse, saisie en tête
+  du projet (`project_view.dart`). Chaque projet a toute sa simulation, sauf l'acheteur, commun à
+  tous et saisi au-dessus des onglets dans « Votre situation » (`BuyerParams`, `withBuyerOf`) :
+  revenus, revenu fiscal, prélèvement, revenus locatifs, autres crédits, foyer, âge, primo-accédant,
+  loyer et charges actuels. Un nouveau projet reprend l'acheteur et le taux du projet affiché, le
+  reste par défaut. Supprimer le dernier projet le remplace par un neuf.
+- Tous les projets sont gardés sur l'appareil (stockage local du navigateur, `saved_projects.dart`),
+  chacun sous son code de partage, et rechargés à l'ouverture. `legacy_inputs.dart` reprend une
+  fois les valeurs de la version à simulation unique.
 - Budget mensuel (vue acheteur : charges, taxe foncière, énergie, épargne travaux de copro) et
   négociation (offre, plafond, prix affiché) dans `budget.dart`. Ils ne touchent pas aux calculs
   bancaires, sauf les appels de fonds de copro à l'achat, financés avec le projet.
@@ -78,8 +84,9 @@ déploie `api/` en fonctions.
   zonage ABC (data.gouv.fr, « Liste des communes selon le zonage ABC ») gardé tel que publié. À
   chaque nouvel arrêté, remplacer le fichier par la nouvelle version.
 - Partage : « Partager » copie `https://simmo.centuryspine.org/#<code>`, où le code compacte tous
-  les paramètres (`share_link.dart`). Ne jamais réordonner les champs du code : tout changement de
-  format passe par une nouvelle version, sinon les liens déjà partagés cassent.
+  les paramètres du projet affiché (`share_link.dart`). Un lien reçu s'ouvre dans un onglet à part,
+  jamais gardé. Ne jamais réordonner les champs du code : tout changement de format passe par une
+  nouvelle version, sinon les liens déjà partagés et les projets gardés cassent.
 - Pied de page : avertissement, mentions légales, confidentialité (RGPD), « À propos »
   (centuryspine.org), « © 2026 Simmo » (`lib/features/legal/`). Tenir ces textes à jour à chaque
   nouvelle donnée gardée sur l'appareil ou nouveau service tiers.

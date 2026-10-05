@@ -5,7 +5,8 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
-import 'features/simulation/data/saved_inputs.dart';
+import 'features/simulation/data/legacy_inputs.dart';
+import 'features/simulation/data/saved_projects.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,8 +14,11 @@ Future<void> main() async {
   // rewrite to index.html (vercel.json) exists to support this.
   usePathUrlStrategy();
   _registerFontLicence();
-  final saved = SavedInputs(await SharedPreferences.getInstance());
-  runApp(SimmoApp(saved: saved, sharedFragment: Uri.base.fragment));
+  final prefs = await SharedPreferences.getInstance();
+  await migrateLegacyInputs(prefs);
+  runApp(
+    SimmoApp(saved: SavedProjects(prefs), sharedFragment: Uri.base.fragment),
+  );
 }
 
 /// The font is bundled as an asset, not a Dart package, so Flutter's licence

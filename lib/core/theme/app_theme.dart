@@ -237,6 +237,28 @@ ThemeData buildAppTheme() {
         visualDensity: VisualDensity.compact,
       ),
     ),
+    // Project tabs.
+    chipTheme: ChipThemeData(
+      shape: controlShape,
+      side: const BorderSide(color: AppColors.border, width: 1.5),
+      color: WidgetStateProperty.resolveWith(
+        (states) => states.contains(WidgetState.selected)
+            ? AppColors.primaryContainer
+            : AppColors.surface,
+      ),
+      labelStyle: style(
+        14,
+        FontWeight.w700,
+        color: WidgetStateColor.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.onPrimaryContainer
+              : AppColors.textSecondary,
+        ),
+      ),
+      iconTheme: const IconThemeData(color: AppColors.textSecondary, size: 18),
+      deleteIconColor: AppColors.onPrimaryContainer,
+      showCheckmark: false,
+    ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.all(AppColors.surface),
       trackColor: WidgetStateProperty.resolveWith(

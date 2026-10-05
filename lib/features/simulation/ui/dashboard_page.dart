@@ -6,23 +6,21 @@ import 'package:flutter/services.dart';
 import '../../../shared/native_share.dart';
 import '../../legal/ui/site_footer.dart';
 import '../../../shared/simmo_logo.dart';
-import '../data/communes.dart';
-import '../data/saved_inputs.dart';
+import '../data/saved_projects.dart';
 import '../data/share_link.dart';
-import '../domain/rules.dart';
+import '../domain/project.dart';
 import '../domain/simulation_input.dart';
-import '../domain/simulation_result.dart';
 import '../domain/simulator.dart';
 import 'advanced_params.dart';
-import 'main_params.dart';
-import 'results.dart';
+import 'project_view.dart';
 
-/// The whole app: inputs and results on one page, recomputed on every change.
+/// The whole app: the buyer's situation, one tab per project, the shown
+/// project below.
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key, this.saved, this.sharedFragment = ''});
 
-  /// Values kept on the device; null in tests.
-  final SavedInputs? saved;
+  /// Projects kept on the device; null in tests.
+  final SavedProjects? saved;
 
   /// Fragment of the opening URL: a shared simulation, if any.
   final String sharedFragment;
@@ -32,66 +30,136 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  var _input = const SimulationInput();
+  /// Never empty: a new buyer starts with one project.
+  late List<Project> _projects;
+  var _active = 0;
 
-  /// Main parameters in the order the user last typed them (newest last).
-  final _edited = <MainField>[];
+  /// One per project: its widgets start afresh when another project takes
+  /// its place.
+  late List<Key> _keys;
 
-  /// Which untouched parameters adapt first: the purchase capacity.
-  static const _computePreference = [
-    MainField.price,
-    MainField.loan,
-    MainField.payment,
-    MainField.duration,
-    MainField.downPayment,
-  ];
+  /// No project kept yet: the buyer's situation is to fill in.
+  late final bool _firstVisit;
+
+  /// The simulation of the opening link: a tab of its own, never kept.
+  Project? _shared;
+  var _showShared = false;
 
   @override
   void initState() {
     super.initState();
-    // A shared link wins over the values kept on the device, which it does
-    // not overwrite.
+    final saved = widget.saved;
+    _projects = saved?.projects ?? const [];
+    _firstVisit = _projects.isEmpty;
+    if (_firstVisit) _projects = const [Project(SimulationInput())];
+    _active = (saved?.active ?? 0).clamp(0, _projects.length - 1);
+    _keys = [for (final _ in _projects) UniqueKey()];
     final shared = decodeInput(widget.sharedFragment);
     if (shared != null) {
-      _input = shared;
-      _edited.addAll(
-        MainField.values.where((f) => !shared.computed.contains(f)),
-      );
-      return;
-    }
-    final saved = widget.saved;
-    if (saved == null) return;
-    _input = saved.restore(_input);
-    // A saved price was typed by the user: it stays an input.
-    if (saved.hasPrice) {
-      _edited.add(MainField.price);
-      _input = _input.copyWith(computed: _pickComputed());
-    }
-    // The zone is not saved: a saved address gives it back.
-    final citycode = _input.address?.citycode;
-    if (citycode != null) {
-      loadCommunes().then((communes) {
-        final zone = communeByCode(communes, citycode)?.zone;
-        if (zone != null && mounted) {
-          setState(() => _input = _input.copyWith(zone: zone));
-        }
-      });
+      _shared = Project.received(shared);
+      _showShared = true;
     }
   }
 
-  /// Forgets the values kept on this device (RGPD).
+  Project get _shown => _showShared ? _shared! : _projects[_active];
+
+  void _save() => widget.saved?.save(_projects, _active);
+
+  void _update(Project project) {
+    if (_showShared) {
+      setState(() => _shared = project);
+      return;
+    }
+    setState(() {
+      // The buyer is the same in every project.
+      _projects = [
+        for (final (i, p) in _projects.indexed)
+          i == _active
+              ? project
+              : Project(p.input.withBuyerOf(project.input), p.typed),
+      ];
+    });
+    _save();
+  }
+
+  void _select(int index) {
+    setState(() {
+      _showShared = false;
+      _active = index;
+    });
+    _save();
+  }
+
+  /// A project for another property: same buyer, and the rate of the project
+  /// shown.
+  Project get _newProject => Project(
+    const SimulationInput()
+        .withBuyerOf(_projects.first.input)
+        .copyWith(rate: _projects[_active].input.rate),
+  );
+
+  void _add() {
+    setState(() {
+      _projects = [..._projects, _newProject];
+      _keys.add(UniqueKey());
+      _active = _projects.length - 1;
+      _showShared = false;
+    });
+    _save();
+  }
+
+  Future<void> _delete() async {
+    final name = _projects[_active].name(_active + 1);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer ce projet ?'),
+        content: Text('« $name » sera effacé de cet appareil.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() {
+      final replacement = _newProject;
+      _projects = [..._projects]..removeAt(_active);
+      _keys.removeAt(_active);
+      // The last project gives way to a new one.
+      if (_projects.isEmpty) {
+        _projects = [replacement];
+        _keys.add(UniqueKey());
+      }
+      _active = min(_active, _projects.length - 1);
+    });
+    _save();
+  }
+
+  /// Forgets every project kept on this device (RGPD) and starts afresh.
   void _clearData() {
     widget.saved?.clear();
+    setState(() {
+      _projects = const [Project(SimulationInput())];
+      _keys = [UniqueKey()];
+      _active = 0;
+    });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Données de cet appareil effacées')),
     );
   }
 
-  /// Shares a link reproducing this simulation: the share sheet on a
+  /// Shares a link reproducing the shown simulation: the share sheet on a
   /// phone, otherwise a copy; the link is shown when the browser refuses
   /// the clipboard.
   Future<void> _share() async {
-    final link = shareLink(_input);
+    final link = shareLink(_shown.input);
     if (await shareNatively(title: 'Simulation Simmo', url: link)) return;
     try {
       await Clipboard.setData(ClipboardData(text: link));
@@ -118,106 +186,8 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  void _set(SimulationInput input, {bool priceTyped = false}) {
-    widget.saved?.save(_input, input, priceTyped: priceTyped);
-    setState(() => _input = input);
-  }
-
-  /// The two parameters to compute: untouched ones first, then the least
-  /// recently typed, so the latest entries always stay as typed.
-  Set<MainField> _pickComputed() {
-    final order = [
-      ..._computePreference.where((f) => !_edited.contains(f)),
-      ..._edited,
-    ];
-    for (var j = 1; j < order.length; j++) {
-      for (var i = 0; i < j; i++) {
-        final pair = {order[i], order[j]};
-        if (isSolvable(pair)) return pair;
-      }
-    }
-    return const {MainField.price, MainField.loan};
-  }
-
-  void _edit(MainField field, SimulationInput edited) {
-    final previous = simulate(_input);
-    _edited
-      ..remove(field)
-      ..add(field);
-    final computed = _pickComputed();
-    // Parameters that stop being computed keep their last computed value,
-    // so nothing jumps.
-    var input = edited;
-    for (final f in _input.computed.difference(computed)) {
-      if (f != field) input = _keep(input, f, previous);
-    }
-    _set(
-      input.copyWith(computed: computed),
-      priceTyped: field == MainField.price,
-    );
-  }
-
-  SimulationInput _keep(
-    SimulationInput i,
-    MainField field,
-    SimulationResult r,
-  ) => switch (field) {
-    MainField.price => i.copyWith(price: r.price),
-    MainField.downPayment => i.copyWith(downPayment: r.downPayment),
-    MainField.loan => i.copyWith(loanAmount: r.borrowed),
-    MainField.duration => i.copyWith(durationMonths: r.durationMonths),
-    MainField.payment => switch (i.effortMode) {
-      EffortMode.payment => i.copyWith(monthlyPayment: r.monthlyPayment),
-      EffortMode.allIn => i.copyWith(
-        housingBudget: r.monthlyPayment + i.runningCosts,
-      ),
-      EffortMode.debtRatio => i.copyWith(debtRatio: r.debtRatioAfter),
-    },
-  };
-
-  /// Converts the effort to the other unit without changing it.
-  void _effortMode(EffortMode mode) {
-    final i = _input.copyWith(effortMode: mode);
-    final target = max(0.0, targetMonthly(_input));
-    final income = retainedIncome(i);
-    _set(switch (mode) {
-      EffortMode.payment => i.copyWith(monthlyPayment: target.roundToDouble()),
-      EffortMode.allIn => i.copyWith(
-        housingBudget: (target + i.runningCosts).roundToDouble(),
-      ),
-      EffortMode.debtRatio => i.copyWith(
-        debtRatio: income > 0
-            ? ((target + i.otherLoans) / income).clamp(
-                minDebtRatio,
-                maxDebtRatio,
-              )
-            : Rules.debtRatioLimit,
-      ),
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    final result = simulate(_input);
-    final summary = SummaryCard(input: _input, result: result);
-    final inputs = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        MainParams(
-          input: _input,
-          result: result,
-          onEdit: _edit,
-          onChanged: _set,
-          onEffortMode: _effortMode,
-        ),
-        const SizedBox(height: 16),
-        BudgetParams(input: _input, onChanged: _set),
-        const SizedBox(height: 16),
-        AdvancedParams(input: _input, result: result, onChanged: _set),
-      ],
-    );
-    final details = ResultDetails(input: _input, result: result);
-
     return Scaffold(
       body: SafeArea(
         child: LayoutBuilder(
@@ -233,31 +203,26 @@ class _DashboardPageState extends State<DashboardPage> {
                     children: [
                       _Header(onShare: _share),
                       const SizedBox(height: 24),
-                      if (wide)
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(width: 440, child: inputs),
-                            const SizedBox(width: 24),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  summary,
-                                  const SizedBox(height: 16),
-                                  details,
-                                ],
-                              ),
-                            ),
-                          ],
-                        )
-                      else ...[
-                        summary,
-                        const SizedBox(height: 16),
-                        inputs,
-                        const SizedBox(height: 16),
-                        details,
-                      ],
+                      BuyerParams(
+                        input: _shown.input,
+                        result: simulate(_shown.input),
+                        onChanged: (input) =>
+                            _update(Project(input, _shown.typed)),
+                        wide: wide,
+                        initiallyExpanded: _firstVisit,
+                        shared: _showShared,
+                      ),
+                      const SizedBox(height: 24),
+                      _tabs(),
+                      const SizedBox(height: 16),
+                      ProjectView(
+                        key: _showShared
+                            ? const ValueKey('shared')
+                            : _keys[_active],
+                        project: _shown,
+                        onChanged: _update,
+                        wide: wide,
+                      ),
                       SiteFooter(onClearData: _clearData),
                     ],
                   ),
@@ -267,6 +232,58 @@ class _DashboardPageState extends State<DashboardPage> {
           },
         ),
       ),
+    );
+  }
+
+  /// The shared simulation first, then the projects; the shown tab can be
+  /// closed.
+  Widget _tabs() {
+    Widget tab(
+      String name, {
+      required bool shown,
+      required VoidCallback onSelect,
+      required VoidCallback onClose,
+      required String closeTooltip,
+    }) => InputChip(
+      label: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 280),
+        child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
+      ),
+      selected: shown,
+      onSelected: (_) => onSelect(),
+      onDeleted: shown ? onClose : null,
+      deleteButtonTooltipMessage: closeTooltip,
+    );
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        if (_shared != null)
+          tab(
+            'Lien partagé',
+            shown: _showShared,
+            onSelect: () => setState(() => _showShared = true),
+            onClose: () => setState(() {
+              _shared = null;
+              _showShared = false;
+            }),
+            closeTooltip: 'Fermer',
+          ),
+        for (final (i, project) in _projects.indexed)
+          tab(
+            project.name(i + 1),
+            shown: !_showShared && i == _active,
+            onSelect: () => _select(i),
+            onClose: _delete,
+            closeTooltip: 'Supprimer le projet',
+          ),
+        ActionChip(
+          avatar: const Icon(Icons.add),
+          label: const Text('Nouveau projet'),
+          onPressed: _add,
+        ),
+      ],
     );
   }
 }
